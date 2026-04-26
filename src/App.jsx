@@ -376,8 +376,10 @@ export default function App() {
         backdropFilter:"blur(12px)", borderBottom:`1px solid ${C.border}`,
         padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <img src="/icon-512.svg" style={{ width:32, height:32, borderRadius:8 }} alt="Terp Journal"/>
           <div>
+            <div style={{ width:32, height:32, borderRadius:8, overflow:"hidden" }}>
+              <img src="/icon-512.svg" style={{ width:32, height:32 }} alt="Terp Journal"/>
+            </div>
             <div style={{ fontSize:16, fontWeight:800, letterSpacing:"-0.02em", color:C.accent }}>Terp Journal</div>
             <div style={{ fontSize:10, color:C.muted }}>your cannabis companion</div>
           </div>
