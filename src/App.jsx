@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import appIcon from '/public/icon-512.svg'
+import appIcon from '../public/icon-512.svg'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const METHODS = [
