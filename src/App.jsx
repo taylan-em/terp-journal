@@ -650,7 +650,7 @@ export default function App() {
 
       {/* NAV */}
       <nav style={{ display:"flex", background:C.bg, borderBottom:`1px solid ${C.border}`, position:"sticky", top:57, zIndex:49 }}>
-        {[{id:"home",e:"🏠",l:"Home"},{id:"log",e:"✦",l:"Log"},{id:"sessions",e:"📋",l:"History"},{id:"insights",e:"📊",l:"Insights"},{id:"more",e:"⚙️",l:"More"}].map(t=>(
+        {[{id:"home",e:"🏠",l:"Home"},{id:"log",e:"🌿",l:"Log"},{id:"sessions",e:"📋",l:"History"},{id:"insights",e:"📊",l:"Insights"},{id:"more",e:"⚙️",l:"More"}].map(t=>(
           <button key={t.id} onClick={()=>{ setTab(t.id); if(t.id==="log")setStep(0); }} style={{
             flex:1, padding:"9px 2px", border:"none", cursor:"pointer", background:"transparent",
             borderBottom:tab===t.id?`2px solid ${C.accent}`:"2px solid transparent",
