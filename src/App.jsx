@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import appIcon from '../public/icon-512.svg'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const METHODS = [
@@ -377,7 +376,26 @@ export default function App() {
         backdropFilter:"blur(12px)", borderBottom:`1px solid ${C.border}`,
         padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <img src={appIcon} style={{ width:32, height:32, borderRadius:8 }} alt="Terp Journal"/>
+          <svg width="32" height="32" viewBox="0 0 100 100" style={{ flexShrink:0 }}>
+            <rect width="100" height="100" rx="20" fill="#0a1f0a"/>
+            <g transform="translate(50,54)">
+              <polygon points="0,-28 2.8,-14 0,2 -2.8,-14" fill="#0a1f0a" stroke="#a3e635" strokeWidth="2.2" strokeLinejoin="round"/>
+              <polygon points="0,-28 2.8,-14 0,2 -2.8,-14" fill="#0a1f0a" stroke="#a3e635" strokeWidth="2" strokeLinejoin="round" transform="rotate(-36,0,0)"/>
+              <polygon points="0,-28 2.8,-14 0,2 -2.8,-14" fill="#0a1f0a" stroke="#a3e635" strokeWidth="2" strokeLinejoin="round" transform="rotate(36,0,0)"/>
+              <polygon points="0,-25 2.4,-12 0,2 -2.4,-12" fill="#0a1f0a" stroke="#6aaa18" strokeWidth="1.7" strokeLinejoin="round" transform="rotate(-72,0,0)"/>
+              <polygon points="0,-25 2.4,-12 0,2 -2.4,-12" fill="#0a1f0a" stroke="#6aaa18" strokeWidth="1.7" strokeLinejoin="round" transform="rotate(72,0,0)"/>
+              <polygon points="0,-21 2,-10 0,2 -2,-10" fill="#0a1f0a" stroke="#4a8010" strokeWidth="1.4" strokeLinejoin="round" transform="rotate(-108,0,0)"/>
+              <polygon points="0,-21 2,-10 0,2 -2,-10" fill="#0a1f0a" stroke="#4a8010" strokeWidth="1.4" strokeLinejoin="round" transform="rotate(108,0,0)"/>
+              <line x1="0" y1="2" x2="0" y2="12" stroke="#4a8a18" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="0" y1="-28" x2="0" y2="-34" stroke="#2a5010" strokeWidth="1.5"/>
+              <circle cx="0" cy="-34" r="4" fill="#a3e635"/>
+              <circle cx="0" cy="-34" r="7" fill="none" stroke="#a3e635" strokeWidth="0.8" opacity="0.3"/>
+              <circle cx="-14" cy="-30" r="3" fill="#a3e635"/>
+              <circle cx="14" cy="-30" r="3" fill="#a3e635"/>
+              <circle cx="0" cy="0" r="4" fill="#0a1f0a" stroke="#a3e635" strokeWidth="1.5"/>
+              <circle cx="0" cy="0" r="1.5" fill="#a3e635"/>
+            </g>
+          </svg>
           <div>
             <div style={{ fontSize:16, fontWeight:800, letterSpacing:"-0.02em", color:C.accent }}>Terp Journal</div>
             <div style={{ fontSize:10, color:C.muted }}>your cannabis companion</div>
