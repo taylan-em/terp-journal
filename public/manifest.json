@@ -1,0 +1,12 @@
+{
+  "name": "Terp Journal",
+  "short_name": "Terp",
+  "description": "Cannabis experience log",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060d07",
+  "theme_color": "#a3e635",
+  "icons": [
+    { "src": "/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml" }
+  ]
+}
