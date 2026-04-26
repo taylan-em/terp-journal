@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import appIcon from '/public/icon-512.svg'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const METHODS = [
@@ -376,7 +377,7 @@ export default function App() {
         backdropFilter:"blur(12px)", borderBottom:`1px solid ${C.border}`,
         padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ fontSize:22 }}>🌿</div>
+          <img src={appIcon} style={{ width:32, height:32, borderRadius:8 }} alt="Terp Journal"/>
           <div>
             <div style={{ fontSize:16, fontWeight:800, letterSpacing:"-0.02em", color:C.accent }}>Terp Journal</div>
             <div style={{ fontSize:10, color:C.muted }}>your cannabis companion</div>
