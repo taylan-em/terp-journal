@@ -1262,7 +1262,7 @@ export default function App() {
                     <Card key={x.l} style={{ textAlign:"center", padding:14 }}>
                       <div style={{ fontSize:20, marginBottom:4 }}>{x.i}</div>
                       <div style={{ fontSize:24, fontWeight:800, color:x.c }}>
-                        {x.prefix&&+x.v>=0?"+"}{x.v}
+                        {x.prefix ? (+x.v >= 0 ? `+${x.v}` : x.v) : x.v}
                       </div>
                       <div style={{ fontSize:10, color:C.muted }}>{x.l}</div>
                     </Card>
