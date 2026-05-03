@@ -1,17 +1,157 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { LineChart, Line, BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
+// ─── SOUND ENGINE ─────────────────────────────────────────────────────────────
+const Sound = {
+  ctx: null,
+  init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+  play(type) {
+    try {
+      this.init();
+      const ctx = this.ctx;
+      const now = ctx.currentTime;
+      switch(type) {
+        case "tap": {
+          const o = ctx.createOscillator(); const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.setValueAtTime(800, now); o.frequency.exponentialRampToValueAtTime(400, now+0.1);
+          g.gain.setValueAtTime(0.15, now); g.gain.exponentialRampToValueAtTime(0.001, now+0.1);
+          o.start(now); o.stop(now+0.1); break;
+        }
+        case "select": {
+          const o = ctx.createOscillator(); const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination); o.type = "sine";
+          o.frequency.setValueAtTime(440, now); o.frequency.exponentialRampToValueAtTime(660, now+0.12);
+          g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.001, now+0.15);
+          o.start(now); o.stop(now+0.15); break;
+        }
+        case "save": {
+          [523, 659, 784, 1047].forEach((f, i) => {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination); o.type = "sine";
+            const t = now + i * 0.08;
+            o.frequency.setValueAtTime(f, t);
+            g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.25, t+0.02);
+            g.gain.exponentialRampToValueAtTime(0.001, t+0.25);
+            o.start(t); o.stop(t+0.25);
+          }); break;
+        }
+        case "levelup": {
+          [523,659,784,1047,1319].forEach((f, i) => {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination); o.type = "triangle";
+            const t = now + i * 0.1;
+            o.frequency.setValueAtTime(f, t);
+            g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.3, t+0.03);
+            g.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+            o.start(t); o.stop(t+0.3);
+          }); break;
+        }
+        case "milestone": {
+          const freqs = [392,494,587,740,880,1047];
+          freqs.forEach((f, i) => {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination); o.type = "sine";
+            const t = now + i * 0.07;
+            o.frequency.setValueAtTime(f, t);
+            g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.28, t+0.02);
+            g.gain.exponentialRampToValueAtTime(0.001, t+0.28);
+            o.start(t); o.stop(t+0.28);
+          }); break;
+        }
+        case "unlock": {
+          const o = ctx.createOscillator(); const g = ctx.createGain();
+          const o2 = ctx.createOscillator(); const g2 = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination); o.type = "sine";
+          o2.connect(g2); g2.connect(ctx.destination); o2.type = "sine";
+          o.frequency.setValueAtTime(220, now); o.frequency.exponentialRampToValueAtTime(880, now+0.4);
+          g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.001, now+0.5);
+          o2.frequency.setValueAtTime(330, now+0.1); o2.frequency.exponentialRampToValueAtTime(1320, now+0.5);
+          g2.gain.setValueAtTime(0.15, now+0.1); g2.gain.exponentialRampToValueAtTime(0.001, now+0.6);
+          o.start(now); o.stop(now+0.5);
+          o2.start(now+0.1); o2.stop(now+0.6); break;
+        }
+        case "swipe": {
+          const o = ctx.createOscillator(); const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination); o.type = "sine";
+          o.frequency.setValueAtTime(300, now); o.frequency.exponentialRampToValueAtTime(600, now+0.08);
+          g.gain.setValueAtTime(0.08, now); g.gain.exponentialRampToValueAtTime(0.001, now+0.1);
+          o.start(now); o.stop(now+0.1); break;
+        }
+        default: break;
+      }
+    } catch(e) {}
+  }
+};
+
+// ─── RANK SYSTEM ──────────────────────────────────────────────────────────────
+const RANKS = [
+  { min:0,    title:"Green Thumb",      icon:"🌱", color:"#86efac" },
+  { min:3,    title:"Casual Terper",    icon:"🌿", color:"#4ade80" },
+  { min:8,    title:"Strain Explorer",  icon:"🔍", color:"#a3e635" },
+  { min:15,   title:"Bud Connoisseur",  icon:"🌺", color:"#fb923c" },
+  { min:25,   title:"Terpene Scholar",  icon:"🧪", color:"#a78bfa" },
+  { min:40,   title:"Strain Hunter",    icon:"🎯", color:"#f59e0b" },
+  { min:60,   title:"Hash Professor",   icon:"🎓", color:"#67e8f9" },
+  { min:100,  title:"Cannabis Sommelier",icon:"🍷",color:"#f472b6" },
+];
+
+const getXP = (sessions) => {
+  let xp = 0;
+  sessions.forEach(s => {
+    xp += 10; // base
+    if (s.effects?.length >= 3) xp += 5;
+    if (s.flavors?.length >= 2) xp += 3;
+    if (s.physicalNotes || s.mentalNotes) xp += 5;
+    if (s.photos?.length > 0) xp += 8;
+    if (s.ratings?.overall >= 8) xp += 4;
+    if (s.notes?.length > 20) xp += 3;
+  });
+  return xp;
+};
+
+const getRank = (xp) => {
+  const r = [...RANKS].reverse().find(r => xp >= r.min * 10);
+  return r || RANKS[0];
+};
+
+const getNextRank = (xp) => {
+  const idx = RANKS.findIndex(r => r.title === getRank(xp).title);
+  return idx < RANKS.length - 1 ? RANKS[idx + 1] : null;
+};
+
+// ─── MILESTONES ───────────────────────────────────────────────────────────────
+const MILESTONES = [
+  { id:"first",       icon:"🌱", title:"First Session",        desc:"Logged your first session",          check: s => s.length >= 1 },
+  { id:"five",        icon:"✋", title:"High Five",             desc:"5 sessions logged",                  check: s => s.length >= 5 },
+  { id:"tenner",      icon:"🔟", title:"Perfect Ten",          desc:"10 sessions logged",                 check: s => s.length >= 10 },
+  { id:"fifty",       icon:"🏆", title:"Half Century",         desc:"50 sessions logged",                 check: s => s.length >= 50 },
+  { id:"streak3",     icon:"🔥", title:"On Fire",              desc:"3 day streak",                       check: (s,p) => p.streak >= 3 },
+  { id:"streak7",     icon:"⚡", title:"Week Warrior",         desc:"7 day streak",                       check: (s,p) => p.streak >= 7 },
+  { id:"strains5",    icon:"🌿", title:"Strain Collector",     desc:"Tried 5 different strains",          check: s => new Set(s.map(x=>x.strain)).size >= 5 },
+  { id:"strains10",   icon:"🎨", title:"Palette Expanded",     desc:"Tried 10 different strains",         check: s => new Set(s.map(x=>x.strain)).size >= 10 },
+  { id:"photographer",icon:"📸", title:"Bud Photographer",     desc:"Added a strain photo",               check: s => s.some(x=>x.photos?.length>0) },
+  { id:"reviewer",    icon:"✍️", title:"Thoughtful Logger",    desc:"Wrote detailed notes 3 times",       check: s => s.filter(x=>x.notes?.length>30).length >= 3 },
+  { id:"wellness",    icon:"🧘", title:"Wellness Tracker",     desc:"Tracked wellbeing 5 times",          check: s => s.filter(x=>x.physicalNotes||x.mentalNotes).length >= 5 },
+  { id:"perfect10",   icon:"💯", title:"Perfect Score",        desc:"Gave a 10/10 rating",                check: s => s.some(x=>x.ratings?.overall===10) },
+  { id:"flavor",      icon:"👅", title:"Flavour Chaser",       desc:"Logged 5 different flavours",        check: s => new Set(s.flatMap(x=>x.flavors||[])).size >= 5 },
+  { id:"morning",     icon:"🌅", title:"Early Bird",           desc:"Logged before 9am",                  check: s => s.some(x=>new Date(x.date).getHours()<9) },
+  { id:"night",       icon:"🌙", title:"Night Owl",            desc:"Logged after midnight",              check: s => s.some(x=>new Date(x.date).getHours()>=0&&new Date(x.date).getHours()<4) },
+];
+
+const checkMilestones = (sessions, profile) => MILESTONES.filter(m => m.check(sessions, profile||{}));
+
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const METHODS = [
-  { id:"joint",     emoji:"🚬", label:"Joint",      unit:"g",    min:0.1,  max:3,   step:0.1,  def:0.5  },
-  { id:"blunt",     emoji:"🍂", label:"Blunt",      unit:"g",    min:0.5,  max:5,   step:0.1,  def:1    },
-  { id:"pipe",      emoji:"🪈", label:"Pipe",       unit:"g",    min:0.1,  max:2,   step:0.1,  def:0.3  },
-  { id:"bong",      emoji:"🫧", label:"Bong",       unit:"g",    min:0.1,  max:2,   step:0.1,  def:0.3  },
-  { id:"dryvape",   emoji:"🌬️", label:"Dry Vape",   unit:"g",    min:0.05, max:1,   step:0.05, def:0.15 },
-  { id:"resinvape", emoji:"🛢️", label:"Resin Vape", unit:"puffs",min:1,    max:30,  step:1,    def:3    },
-  { id:"dab",       emoji:"🧪", label:"Dab",        unit:"g",    min:0.05, max:1,   step:0.05, def:0.1  },
-  { id:"edible",    emoji:"🍫", label:"Edible",     unit:"mg",   min:2.5,  max:100, step:2.5,  def:10   },
-  { id:"tincture",  emoji:"💧", label:"Tincture",   unit:"ml",   min:0.5,  max:10,  step:0.5,  def:1    },
+  { id:"joint",     emoji:"🚬", label:"Joint",      unit:"g",    min:0.1,  max:3,   step:0.1,  def:0.5,  tips:["Roll tight for an even burn","Use a crutch/filter for cooler smoke","Grind evenly for best airflow"] },
+  { id:"blunt",     emoji:"🍂", label:"Blunt",      unit:"g",    min:0.5,  max:5,   step:0.1,  def:1,    tips:["Lick the wrap lightly — not too wet","Let it dry 30 seconds after sealing","Rotate while smoking for even burn"] },
+  { id:"pipe",      emoji:"🪈", label:"Pipe",       unit:"g",    min:0.1,  max:2,   step:0.1,  def:0.3,  tips:["Corner the bowl — don't burn it all at once","Clean your pipe weekly for best flavour","Pack loosely for better airflow"] },
+  { id:"bong",      emoji:"🫧", label:"Bong",       unit:"g",    min:0.1,  max:2,   step:0.1,  def:0.3,  tips:["Change water every session","Ice in the tube cools the smoke significantly","Clear the chamber fully for best effect"] },
+  { id:"dryvape",   emoji:"🌬️", label:"Dry Vape",   unit:"g",    min:0.05, max:1,   step:0.05, def:0.15, tips:["Start at 170°C, work up slowly","Grind fine for even heat distribution","ABV (already been vaped) can be reused in edibles"] },
+  { id:"resinvape", emoji:"🛢️", label:"Resin Vape", unit:"puffs",min:1,    max:30,  step:1,    def:3,    tips:["Store carts upright to prevent leaks","Keep below 200°C to preserve terpenes","Preheat mode warms thick oil better"] },
+  { id:"dab",       emoji:"🧪", label:"Dab",        unit:"g",    min:0.05, max:1,   step:0.05, def:0.1,  tips:["Low temp dabs (450-550°F) preserve terpenes","Let the nail cool 30-45 seconds after heating","Use a carb cap for full flavour extraction"] },
+  { id:"edible",    emoji:"🍫", label:"Edible",     unit:"mg",   min:2.5,  max:100, step:2.5,  def:10,   tips:["Wait 90 minutes before considering more","Eat a light meal first for consistent absorption","Effects last 4-8 hours — plan accordingly"] },
+  { id:"tincture",  emoji:"💧", label:"Tincture",   unit:"ml",   min:0.5,  max:10,  step:0.5,  def:1,    tips:["Hold under tongue 60-90 seconds for fastest effect","Faster onset than edibles when held sublingually","Start with 0.5ml and wait 45 minutes"] },
 ];
 
 const EFFECTS = ["Relaxed","Euphoric","Happy","Creative","Focused","Sleepy","Uplifted","Energetic","Calm","Hungry","Talkative","Giggly"];
@@ -73,7 +213,8 @@ const RATINGS = [
   { id:"effect",     label:"Effect",    icon:"🧠", color:"#6ee7b7" },
   { id:"value",      label:"Value",     icon:"💰", color:"#fde68a" },
 ];
-const MOODS       = ["😔","😐","🙂","😊","🌟"];
+
+const MOODS = ["😔","😐","🙂","😊","🌟"];
 const MOOD_LABELS = ["Low","Meh","Okay","Good","Amazing"];
 
 const STRAIN_DB = [
@@ -122,6 +263,14 @@ const STRAIN_DB = [
 const typeColor = t => t==="Indica"?"#a78bfa":t==="Sativa"?"#fbbf24":"#34d399";
 const typeBg    = t => t==="Indica"?"#1e1b4b":t==="Sativa"?"#431407":"#022c22";
 
+const C = {
+  bg:"#080f09", card:"#0e1a0f", border:"#1c2e1c",
+  accent:"#a3e635", accentDim:"#a3e63520",
+  text:"#d4e8c2", muted:"#4a6a4a", faint:"#1e3020",
+  amber:"#f59e0b", amberDim:"#f59e0b22",
+  purple:"#a78bfa",
+};
+
 const mkForm = () => ({
   strain:"", method:"joint", amount:0.5,
   moodBefore:2, moodAfter:2,
@@ -130,12 +279,11 @@ const mkForm = () => ({
   physical: Object.fromEntries(PHYSICAL_FACTORS.map(f=>[f.id,0])),
   mental:   Object.fromEntries(MENTAL_FACTORS.map(f=>[f.id,0])),
   physicalNotes:"", mentalNotes:"", notes:"",
-  brand:"", source:"", batchId:"", purchaseDate:"",
-  date: new Date().toISOString().slice(0,16), intensity:5,
-  photos:[],
+  brand:"", source:"", date: new Date().toISOString().slice(0,16),
+  intensity:5, photos:[],
 });
 
-// ─── LOGO SVG ─────────────────────────────────────────────────────────────────
+// ─── LOGO MARK ────────────────────────────────────────────────────────────────
 const LogoMark = ({ size=32 }) => (
   <svg width={size} height={size} viewBox="0 0 100 100" style={{ flexShrink:0, display:"block" }}>
     <rect width="100" height="100" rx="20" fill="#0a1f0a"/>
@@ -159,20 +307,19 @@ const LogoMark = ({ size=32 }) => (
   </svg>
 );
 
-// ─── SMALL COMPONENTS ─────────────────────────────────────────────────────────
-const C = {
-  bg:"#080f09", card:"#0e1a0f", border:"#1c2e1c",
-  accent:"#a3e635", accentDim:"#a3e63520",
-  text:"#d4e8c2", muted:"#4a6a4a", faint:"#1e3020",
-  amber:"#f59e0b", amberDim:"#f59e0b22",
-};
+// ─── COMPONENTS ───────────────────────────────────────────────────────────────
+const Card = ({ children, style={}, onClick }) => (
+  <div onClick={onClick} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:16, ...style }}>
+    {children}
+  </div>
+);
 
-const Slider = ({ label, icon, value, onChange, min=1, max=10, step=1, color="#a3e635" }) => {
+const Slider = ({ label, icon, value, onChange, min=1, max=10, step=1, color=C.accent }) => {
   const pct = ((value-min)/(max-min))*100;
   return (
     <div style={{ marginBottom:14 }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-        <span style={{ fontSize:13, color:C.muted, display:"flex", alignItems:"center", gap:6 }}><span>{icon}</span>{label}</span>
+      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+        <span style={{ fontSize:13, color:C.muted }}><span>{icon}</span> {label}</span>
         <span style={{ fontSize:18, fontWeight:700, color }}>{value}</span>
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
@@ -198,7 +345,7 @@ const BidirSlider = ({ icon, label, value, onChange, color }) => (
           width:`${Math.abs(value)/5*50}%`,
           left:value>=0?"50%":`${50-Math.abs(value)/5*50}%`,
           background:value>=0?color:"#f87171" }}/>
-        <div style={{ position:"absolute", left:"50%", top:-2, width:2, height:10, background:C.border, borderRadius:1 }}/>
+        <div style={{ position:"absolute", left:"50%", top:-2, width:2, height:10, background:C.border }}/>
         <input type="range" min={-5} max={5} value={value} onChange={e=>onChange(+e.target.value)}
           style={{ position:"absolute", inset:0, width:"100%", height:"100%", opacity:0, cursor:"pointer", zIndex:10 }}/>
       </div>
@@ -206,262 +353,244 @@ const BidirSlider = ({ icon, label, value, onChange, color }) => (
   </div>
 );
 
-const Tag = ({ label, active, color=C.accent, bg, onClick }) => (
-  <button onClick={onClick} style={{
-    padding:"6px 12px", borderRadius:20,
-    border:`1.5px solid ${active?color:C.border}`,
-    background:active?(bg||color+"20"):"transparent",
-    color:active?color:C.muted,
-    fontSize:12, cursor:"pointer", fontFamily:"system-ui",
-    fontWeight:active?600:400, transition:"all 0.15s",
-  }}>{label}</button>
-);
-
-const Card = ({ children, style={} }) => (
-  <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:16, ...style }}>
-    {children}
-  </div>
-);
-
 const StepDots = ({ current, total, onGo }) => (
-  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+  <div style={{ display:"flex", gap:6 }}>
     {Array.from({length:total},(_,i)=>(
-      <button key={i} onClick={()=>onGo(i)} style={{
+      <button key={i} onClick={()=>{ Sound.play("tap"); onGo(i); }} style={{
         width:i===current?20:8, height:8, borderRadius:4, border:"none", cursor:"pointer",
-        background:i<current?"#34d399":i===current?C.accent:C.faint,
-        transition:"all 0.25s",
+        background:i<current?"#34d399":i===current?C.accent:C.faint, transition:"all 0.25s",
       }}/>
     ))}
   </div>
 );
 
-// Scrolling strain gallery background
+// XP Progress Bar
+const XPBar = ({ xp }) => {
+  const rank = getRank(xp);
+  const next = getNextRank(xp);
+  const rankXP = rank.min * 10;
+  const nextXP = next ? next.min * 10 : xp;
+  const pct = next ? Math.min(100, ((xp - rankXP) / (nextXP - rankXP)) * 100) : 100;
+  return (
+    <div style={{ marginBottom:4 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+        <span style={{ fontSize:11, color:rank.color, fontWeight:600 }}>{rank.icon} {rank.title}</span>
+        <span style={{ fontSize:11, color:C.muted }}>{xp} XP{next?` · ${nextXP - xp} to ${next.title}`:""}</span>
+      </div>
+      <div style={{ height:5, background:C.faint, borderRadius:3, overflow:"hidden" }}>
+        <div style={{ height:"100%", borderRadius:3, background:`linear-gradient(90deg,${rank.color}88,${rank.color})`, width:`${pct}%`, transition:"width 0.5s" }}/>
+      </div>
+    </div>
+  );
+};
+
+// Milestone toast
+const MilestoneToast = ({ milestone, onClose }) => {
+  useEffect(() => {
+    Sound.play("milestone");
+    const t = setTimeout(onClose, 4000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div style={{ position:"fixed", top:80, left:"50%", transform:"translateX(-50%)", zIndex:300,
+      background:`linear-gradient(135deg,${C.card},#0d2a10)`, border:`1px solid ${C.accent}66`,
+      borderRadius:16, padding:"14px 20px", boxShadow:`0 8px 32px ${C.accent}33`,
+      display:"flex", alignItems:"center", gap:12, minWidth:280, maxWidth:400,
+      animation:"slideDown 0.3s ease" }}>
+      <div style={{ fontSize:32 }}>{milestone.icon}</div>
+      <div>
+        <div style={{ fontSize:13, fontWeight:700, color:C.accent }}>Achievement Unlocked!</div>
+        <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{milestone.title}</div>
+        <div style={{ fontSize:11, color:C.muted }}>{milestone.desc}</div>
+      </div>
+      <button onClick={onClose} style={{ background:"transparent", border:"none", color:C.muted, cursor:"pointer", fontSize:18, marginLeft:"auto" }}>✕</button>
+    </div>
+  );
+};
+
+// Level Up overlay
+const LevelUpOverlay = ({ rank, onClose }) => {
+  useEffect(() => {
+    Sound.play("levelup");
+    const t = setTimeout(onClose, 3500);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:250, background:"rgba(8,15,9,0.92)", display:"flex", alignItems:"center", justifyContent:"center",
+      animation:"fadeIn 0.3s ease" }}>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontSize:72, marginBottom:8, animation:"bounce 0.5s ease" }}>{rank.icon}</div>
+        <div style={{ fontSize:14, color:C.muted, letterSpacing:"0.2em", marginBottom:8 }}>RANK UP</div>
+        <div style={{ fontSize:28, fontWeight:800, color:rank.color, marginBottom:8 }}>{rank.title}</div>
+        <div style={{ fontSize:14, color:C.muted }}>Keep logging to advance</div>
+        <button onClick={onClose} style={{ marginTop:20, padding:"10px 28px", borderRadius:20, border:"none",
+          background:rank.color, color:"#060d07", fontWeight:700, cursor:"pointer", fontSize:14 }}>
+          Let's go →
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Strain Passport Card
+const PassportCard = ({ strain, sessions, allStrains }) => {
+  const st = allStrains.find(s=>s.name===strain);
+  const ss = sessions.filter(s=>s.strain===strain);
+  const n  = ss.length;
+  const avg = n?(ss.reduce((a,s)=>a+(s.ratings?.overall||0),0)/n).toFixed(1):"—";
+  const topEffects = EFFECTS.map(e=>({e,pct:Math.round(ss.filter(s=>s.effects?.includes(e)).length/n*100)}))
+    .filter(x=>x.pct>0).sort((a,b)=>b.pct-a.pct).slice(0,3);
+  const mastered = n >= 5;
+  const photos = ss.flatMap(s=>s.photos||[]).slice(0,1);
+
+  return (
+    <div style={{ background:`linear-gradient(135deg,${C.card},${st?typeBg(st.type):"#0a150b"})`,
+      border:`2px solid ${st?typeColor(st.type)+"44":C.border}`, borderRadius:20, padding:16, marginBottom:10,
+      boxShadow:st?`0 4px 20px ${typeColor(st.type)}15`:undefined }}>
+      <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+        {photos.length>0 && <img src={photos[0]} style={{ width:56, height:56, borderRadius:10, objectFit:"cover", flexShrink:0 }} alt="bud"/>}
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:4 }}>
+            <span style={{ fontSize:16, fontWeight:800, color:C.text }}>{strain}</span>
+            {st&&<span style={{ fontSize:10, padding:"2px 8px", background:typeBg(st.type), border:`1px solid ${typeColor(st.type)}`, borderRadius:10, color:typeColor(st.type) }}>{st.type}</span>}
+            {mastered && <span style={{ fontSize:10, padding:"2px 8px", background:"#f59e0b22", border:"1px solid #f59e0b44", borderRadius:10, color:"#f59e0b" }}>⭐ Mastered</span>}
+          </div>
+          {st && <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>{st.description}</div>}
+          <div style={{ display:"flex", gap:12, fontSize:12, marginBottom:8 }}>
+            {st&&<span style={{ color:C.amber }}>THC {st.thc}%</span>}
+            <span style={{ color:C.accent, fontWeight:700 }}>{avg}/10 avg</span>
+            <span style={{ color:C.muted }}>{n} session{n!==1?"s":""}</span>
+          </div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+            {topEffects.map(({e,pct})=>(
+              <span key={e} style={{ fontSize:10, padding:"2px 8px", background:C.accentDim, borderRadius:10, color:C.accent }}>{e} {pct}%</span>
+            ))}
+          </div>
+        </div>
+      </div>
+      {n >= 2 && (
+        <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}` }}>
+          <div style={{ fontSize:10, color:C.muted, marginBottom:6 }}>YOUR EXPERIENCE MAP</div>
+          <div style={{ display:"flex", gap:4 }}>
+            {RATINGS.map(r=>{
+              const avg = ss.filter(s=>s.ratings?.[r.id]).length
+                ? (ss.reduce((a,s)=>a+(s.ratings?.[r.id]||0),0)/ss.filter(s=>s.ratings?.[r.id]).length)
+                : 0;
+              return (
+                <div key={r.id} style={{ flex:1, textAlign:"center" }}>
+                  <div style={{ fontSize:12 }}>{r.icon}</div>
+                  <div style={{ height:30, background:C.faint, borderRadius:3, position:"relative", margin:"4px 0" }}>
+                    <div style={{ position:"absolute", bottom:0, left:0, right:0, height:`${avg/10*100}%`,
+                      background:r.color, borderRadius:3, transition:"height 0.4s" }}/>
+                  </div>
+                  <div style={{ fontSize:9, color:C.muted }}>{avg.toFixed(0)}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Scrolling background gallery
 const StrainGallery = () => {
-  const cols = [
-    STRAIN_DB.slice(0,8), STRAIN_DB.slice(8,16), STRAIN_DB.slice(16,24), STRAIN_DB.slice(24,32),
-  ];
+  const cols = [STRAIN_DB.slice(0,8),STRAIN_DB.slice(8,16),STRAIN_DB.slice(16,24),STRAIN_DB.slice(24,32)];
   return (
     <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
-      <style>{`
-        @keyframes scrollUp { from{transform:translateY(0)} to{transform:translateY(-50%)} }
-        @keyframes scrollDown { from{transform:translateY(-50%)} to{transform:translateY(0)} }
-      `}</style>
       <div style={{ position:"absolute", inset:0, display:"flex", gap:10, padding:"0 10px" }}>
         {cols.map((col,ci)=>(
-          <div key={ci} style={{ flex:1, overflow:"hidden", opacity:0.18 }}>
-            <div style={{
-              display:"flex", flexDirection:"column", gap:8,
-              animation:`${ci%2===0?"scrollUp":"scrollDown"} ${28+ci*4}s linear infinite`,
-            }}>
+          <div key={ci} style={{ flex:1, overflow:"hidden", opacity:0.15 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:8,
+              animation:`${ci%2===0?"scrollUp":"scrollDown"} ${28+ci*4}s linear infinite` }}>
               {[...col,...col].map((s,i)=>(
-                <div key={i} style={{ background:typeBg(s.type), border:`1px solid ${typeColor(s.type)}44`,
-                  borderRadius:10, padding:"8px 10px" }}>
+                <div key={i} style={{ background:typeBg(s.type), border:`1px solid ${typeColor(s.type)}44`, borderRadius:10, padding:"8px 10px" }}>
                   <div style={{ fontSize:11, fontWeight:700, color:typeColor(s.type), marginBottom:2 }}>{s.name}</div>
                   <div style={{ fontSize:9, color:"#ffffff55" }}>{s.type} · THC {s.thc}%</div>
-                  <div style={{ display:"flex", gap:3, marginTop:4, flexWrap:"wrap" }}>
-                    {s.effects.slice(0,2).map(e=>(
-                      <span key={e} style={{ fontSize:8, padding:"1px 5px", background:"#ffffff11", borderRadius:6, color:"#ffffff66" }}>{e}</span>
-                    ))}
-                  </div>
                 </div>
               ))}
             </div>
           </div>
         ))}
       </div>
-      {/* Fade overlays top and bottom */}
       <div style={{ position:"absolute", top:0, left:0, right:0, height:120, background:`linear-gradient(to bottom,${C.bg},transparent)` }}/>
       <div style={{ position:"absolute", bottom:0, left:0, right:0, height:120, background:`linear-gradient(to top,${C.bg},transparent)` }}/>
     </div>
   );
 };
 
-// ─── ONBOARDING QUIZ ──────────────────────────────────────────────────────────
-const QUIZ_STEPS = [
-  { id:"experience", q:"How long have you been consuming cannabis?", opts:["First time","< 1 year","1–3 years","3–5 years","5+ years"] },
-  { id:"frequency",  q:"How often do you currently consume?", opts:["Rarely","1–2x/week","3–4x/week","Daily","Multiple times daily"] },
-  { id:"goal",       q:"What's your main reason for using?", opts:["Relaxation","Pain/medical","Sleep","Creativity","Social","Exploration"] },
-  { id:"method",     q:"What's your preferred method?", opts:["Joints/blunts","Vaporiser","Bong/pipe","Edibles","Mixed"] },
-  { id:"strains",    q:"Any strains you've tried and loved?", type:"text", placeholder:"e.g. Blue Dream, OG Kush (optional)" },
-];
-
-const OnboardingQuiz = ({ onComplete }) => {
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [textVal, setTextVal] = useState("");
-
-  const current = QUIZ_STEPS[step];
-  const isLast = step === QUIZ_STEPS.length - 1;
-
-  const handleOpt = (opt) => {
-    const updated = { ...answers, [current.id]: opt };
-    setAnswers(updated);
-    if (!isLast) setStep(s=>s+1);
-    else onComplete({ ...updated, pastStrains: textVal });
-  };
+// Daily Ritual component
+const DailyRitual = ({ sessions, onLog }) => {
+  const today = new Date().toDateString();
+  const loggedToday = sessions.some(s=>new Date(s.date).toDateString()===today);
+  const hour = new Date().getHours();
+  const greeting = hour<12?"Good morning":"hour"<17?"Good afternoon":"Good evening";
+  const lastSession = sessions[0];
+  const daysSince = lastSession ? Math.floor((Date.now()-new Date(lastSession.date))/86400000) : null;
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(8,15,9,0.96)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div style={{ width:"100%", maxWidth:440 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:28 }}>
-          <LogoMark size={36}/>
-          <div>
-            <div style={{ fontSize:18, fontWeight:800, color:C.accent }}>Welcome to Terp Journal</div>
-            <div style={{ fontSize:12, color:C.muted }}>Quick setup — {QUIZ_STEPS.length - step} questions left</div>
-          </div>
+    <div style={{ background:`linear-gradient(135deg,#0d2a10,#0a1f1a)`, border:`1px solid ${C.accent}33`,
+      borderRadius:20, padding:18, marginBottom:16, position:"relative", overflow:"hidden" }}>
+      <div style={{ position:"absolute", right:-20, top:-20, fontSize:80, opacity:0.06 }}>🌿</div>
+      <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>{greeting}</div>
+      {loggedToday ? (
+        <div>
+          <div style={{ fontSize:13, color:"#6ee7b7", marginBottom:8 }}>✓ You've logged today</div>
+          {lastSession && <div style={{ fontSize:12, color:C.muted }}>Last: {lastSession.strain} — {lastSession.ratings?.overall}/10</div>}
         </div>
-
-        {/* Progress bar */}
-        <div style={{ height:3, background:C.faint, borderRadius:2, marginBottom:28 }}>
-          <div style={{ height:"100%", borderRadius:2, background:C.accent, width:`${(step/QUIZ_STEPS.length)*100}%`, transition:"width 0.3s" }}/>
+      ) : (
+        <div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:12 }}>
+            {daysSince===0?"You haven't logged yet today.":daysSince===1?"Last logged yesterday.":daysSince?`Last logged ${daysSince} days ago.`:"Start your journal today."}
+          </div>
+          <button onClick={onLog} style={{ padding:"10px 20px", borderRadius:20, border:"none", cursor:"pointer",
+            background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07", fontSize:13, fontWeight:700,
+            boxShadow:`0 4px 16px ${C.accent}33` }}>
+            {loggedToday?"Log another session":"Log today's session"} →
+          </button>
         </div>
-
-        <div style={{ fontSize:17, fontWeight:600, color:C.text, marginBottom:20, lineHeight:1.4 }}>{current.q}</div>
-
-        {current.type === "text" ? (
-          <div>
-            <input value={textVal} onChange={e=>setTextVal(e.target.value)}
-              placeholder={current.placeholder}
-              style={{ width:"100%", padding:"14px", background:C.card, border:`1.5px solid ${C.border}`,
-                borderRadius:12, color:C.text, fontSize:14, boxSizing:"border-box", marginBottom:14 }}/>
-            <button onClick={()=>onComplete({ ...answers, pastStrains: textVal })}
-              style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07", fontSize:15, fontWeight:700 }}>
-              Get Started →
-            </button>
-          </div>
-        ) : (
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            {current.opts.map(opt=>(
-              <button key={opt} onClick={()=>handleOpt(opt)} style={{
-                padding:"14px 18px", borderRadius:12, border:`1.5px solid ${C.border}`,
-                background:C.card, color:C.text, fontSize:14, cursor:"pointer",
-                textAlign:"left", transition:"all 0.15s", fontFamily:"system-ui",
-              }}
-              onMouseEnter={e=>{ e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.background=C.accentDim; }}
-              onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.background=C.card; }}>
-                {opt}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <button onClick={()=>onComplete(answers)} style={{
-          marginTop:16, padding:"8px", width:"100%", borderRadius:8, border:"none",
-          background:"transparent", color:C.muted, cursor:"pointer", fontSize:12 }}>
-          Skip setup
-        </button>
-      </div>
+      )}
     </div>
   );
 };
-
-// ─── SESSION EDIT MODAL ────────────────────────────────────────────────────────
-const EditModal = ({ session, strains, onSave, onClose }) => {
-  const [f, setF] = useState({ ...session });
-  const toggle = (key,val) => setF(prev=>({...prev,[key]:prev[key].includes(val)?prev[key].filter(x=>x!==val):[...prev[key],val]}));
-  return (
-    <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(8,15,9,0.95)", overflowY:"auto", padding:20 }}>
-      <div style={{ maxWidth:480, margin:"0 auto" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.accent }}>Edit Session</div>
-          <button onClick={onClose} style={{ background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer" }}>✕</button>
-        </div>
-
-        <Card style={{ marginBottom:12 }}>
-          <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>STRAIN</div>
-          <select value={f.strain} onChange={e=>setF(p=>({...p,strain:e.target.value}))}
-            style={{ width:"100%", padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:13 }}>
-            {STRAIN_DB.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
-            {strains.filter(s=>!STRAIN_DB.find(d=>d.name===s.name)).map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
-          </select>
-        </Card>
-
-        <Card style={{ marginBottom:12 }}>
-          <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>OVERALL RATING</div>
-          <Slider label="Overall" icon="⭐" value={f.ratings?.overall||7} onChange={v=>setF(p=>({...p,ratings:{...p.ratings,overall:v}}))} color="#f59e0b"/>
-        </Card>
-
-        <Card style={{ marginBottom:12 }}>
-          <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>EFFECTS</div>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-            {EFFECTS.map(e=><Tag key={e} label={e} active={f.effects?.includes(e)} onClick={()=>toggle("effects",e)}/>)}
-          </div>
-        </Card>
-
-        <Card style={{ marginBottom:12 }}>
-          <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>NOTES</div>
-          <textarea value={f.notes||""} onChange={e=>setF(p=>({...p,notes:e.target.value}))}
-            rows={3} placeholder="Session notes..."
-            style={{ width:"100%", padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`,
-              borderRadius:8, color:C.text, fontSize:13, resize:"none", boxSizing:"border-box" }}/>
-        </Card>
-
-        <button onClick={()=>onSave(f)} style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-          background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07", fontSize:14, fontWeight:700 }}>
-          Save Changes
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// ─── PHOTO TIPS MODAL ──────────────────────────────────────────────────────────
-const PhotoTips = ({ onClose }) => (
-  <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(8,15,9,0.97)", padding:24, overflowY:"auto" }}>
-    <div style={{ maxWidth:440, margin:"0 auto" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-        <div style={{ fontSize:16, fontWeight:700, color:C.accent }}>📸 Bud Photo Tips</div>
-        <button onClick={onClose} style={{ background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer" }}>✕</button>
-      </div>
-      {[
-        ["Natural light is king","Take photos near a window during daytime. Avoid flash — it flattens the trichomes and kills the colour."],
-        ["Macro mode","Switch to portrait or macro mode on your phone. Get 5–10cm away from the bud to capture trichome detail."],
-        ["Dark background","Place the bud on a dark surface — black paper or a dark plate. Makes the green and orange pop."],
-        ["Multiple angles","Top-down shows structure. Side-on shows density. Close-up shows trichomes. Take all three."],
-        ["Clean the lens","Obvious but forgotten. Your pocket lint is killing your shots."],
-        ["Steady hands","Rest your phone on a surface or use the timer to avoid blur on close shots."],
-      ].map(([title,tip])=>(
-        <Card key={title} style={{ marginBottom:10 }}>
-          <div style={{ fontSize:13, fontWeight:600, color:C.accent, marginBottom:4 }}>{title}</div>
-          <div style={{ fontSize:12, color:C.muted, lineHeight:1.5 }}>{tip}</div>
-        </Card>
-      ))}
-    </div>
-  </div>
-);
 
 // ─── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [tab,      setTab]      = useState("home");
-  const [sessions, setSessions] = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj6_s")||"[]")}catch{return []} });
-  const [custom,   setCustom]   = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj6_c")||"[]")}catch{return []} });
-  const [profile,  setProfile]  = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj6_p")||"null")}catch{return null} });
+  const [sessions, setSessions] = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj7_s")||"[]")}catch{return []} });
+  const [custom,   setCustom]   = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj7_c")||"[]")}catch{return []} });
+  const [profile,  setProfile]  = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj7_p")||"null")}catch{return null} });
+  const [unlockedMilestones, setUnlockedMilestones] = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj7_m")||"[]")}catch{return []} });
 
-  const [step,     setStep]     = useState(0);
-  const [form,     setForm]     = useState(mkForm());
-  const [saved,    setSaved]    = useState(false);
+  const [step,       setStep]       = useState(0);
+  const [form,       setForm]       = useState(mkForm());
+  const [saved,      setSaved]      = useState(false);
   const [editingSession, setEditingSession] = useState(null);
-  const [showPhotoTips,  setShowPhotoTips]  = useState(false);
-
-  // Optional steps collapsed state
-  const [optionalOpen, setOptionalOpen] = useState({ effects:false, wellbeing:false });
+  const [newMilestone,   setNewMilestone]   = useState(null);
+  const [levelUpRank,    setLevelUpRank]    = useState(null);
+  const [passportStrain, setPassportStrain] = useState(null);
+  const [strainAnecdotes, setStrainAnecdotes] = useState({});
+  const [loadingAnecdotes, setLoadingAnecdotes] = useState(false);
+  const [optionalOpen, setOptionalOpen] = useState({effects:false,wellbeing:false});
+  const [showPhotoTips, setShowPhotoTips] = useState(false);
+  const prevXP = useRef(0);
 
   // Strain search
-  const [sq,       setSq]       = useState("");
-  const [sdrop,    setSdrop]    = useState(false);
-  const [aiRes,    setAiRes]    = useState([]);
-  const [aiLoad,   setAiLoad]   = useState(false);
-  const searchRef  = useRef(null);
-  const aiTimer    = useRef(null);
-
-  const [expandedId, setExpandedId]   = useState(null);
+  const [sq,    setSq]    = useState("");
+  const [sdrop, setSdrop] = useState(false);
+  const [aiRes, setAiRes] = useState([]);
+  const [aiLoad,setAiLoad]= useState(false);
+  const searchRef = useRef(null);
+  const aiTimer   = useRef(null);
+  const [expandedId, setExpandedId] = useState(null);
   const [addingStrain, setAddingStrain] = useState(false);
-  const [newS,     setNewS]     = useState({name:"",type:"Hybrid",thc:"",cbd:"",description:""});
+  const [newS, setNewS] = useState({name:"",type:"Hybrid",thc:"",cbd:"",description:""});
 
-  useEffect(()=>{ localStorage.setItem("tj6_s", JSON.stringify(sessions)); },[sessions]);
-  useEffect(()=>{ localStorage.setItem("tj6_c", JSON.stringify(custom));   },[custom]);
-  useEffect(()=>{ localStorage.setItem("tj6_p", JSON.stringify(profile));  },[profile]);
+  useEffect(()=>{ localStorage.setItem("tj7_s", JSON.stringify(sessions)); },[sessions]);
+  useEffect(()=>{ localStorage.setItem("tj7_c", JSON.stringify(custom));   },[custom]);
+  useEffect(()=>{ localStorage.setItem("tj7_p", JSON.stringify(profile));  },[profile]);
+  useEffect(()=>{ localStorage.setItem("tj7_m", JSON.stringify(unlockedMilestones)); },[unlockedMilestones]);
 
   useEffect(()=>{
     const h=e=>{ if(searchRef.current&&!searchRef.current.contains(e.target)) setSdrop(false); };
@@ -469,7 +598,49 @@ export default function App() {
     return ()=>document.removeEventListener("mousedown",h);
   },[]);
 
+  // Check milestones after sessions change
+  useEffect(()=>{
+    const streak = calcStreak(sessions);
+    const earned = checkMilestones(sessions, {streak});
+    const newOnes = earned.filter(m=>!unlockedMilestones.includes(m.id));
+    if (newOnes.length > 0) {
+      setUnlockedMilestones(prev=>[...prev, ...newOnes.map(m=>m.id)]);
+      setNewMilestone(newOnes[0]);
+    }
+    // Check level up
+    const xp = getXP(sessions);
+    const curRank = getRank(xp);
+    const oldRank = getRank(prevXP.current);
+    if (curRank.title !== oldRank.title && prevXP.current > 0) setLevelUpRank(curRank);
+    prevXP.current = xp;
+  }, [sessions]);
+
   const allStrains = [...STRAIN_DB, ...custom.filter(c=>!STRAIN_DB.find(d=>d.name.toLowerCase()===c.name.toLowerCase()))];
+  const curMethod  = METHODS.find(m=>m.id===form.method)||METHODS[0];
+  const curStrain  = allStrains.find(s=>s.name===form.strain);
+
+  const calcStreak = (sess) => {
+    if(!sess.length) return 0;
+    const days=[...new Set(sess.map(s=>new Date(s.date).toDateString()))];
+    let count=0,d=new Date();
+    for(let i=0;i<30;i++){
+      if(days.includes(d.toDateString())){ count++; d.setDate(d.getDate()-1); }
+      else if(i===0){ d.setDate(d.getDate()-1); if(days.includes(d.toDateString())){count++;d.setDate(d.getDate()-1);}else break; }
+      else break;
+    }
+    return count;
+  };
+
+  const xp         = getXP(sessions);
+  const rank       = getRank(xp);
+  const streak     = calcStreak(sessions);
+  const avgRating  = sessions.length?(sessions.reduce((a,s)=>a+(s.ratings?.overall||0),0)/sessions.length).toFixed(1):"—";
+  const strainNames= [...new Set(sessions.map(s=>s.strain))].filter(Boolean);
+  const qualifiedStrains = strainNames.filter(n=>sessions.filter(s=>s.strain===n).length>=2);
+  const recentStrains = [...new Set(sessions.slice(0,5).map(s=>s.strain))].filter(Boolean).slice(0,3);
+  const earnedMilestones = checkMilestones(sessions, {streak});
+
+  // AI strain search
   const localMatches = sq.length>=1 ? allStrains.filter(s=>
     s.name.toLowerCase().includes(sq.toLowerCase()) ||
     s.type.toLowerCase().includes(sq.toLowerCase()) ||
@@ -481,13 +652,15 @@ export default function App() {
     try {
       const r = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:500,
-          system:`Cannabis strain DB. Return ONLY raw JSON array, no markdown. Up to 3 strains. Each: name, type("Indica"|"Sativa"|"Hybrid"), thc(number), cbd(number), effects(array 3), flavors(array 3), description(max 8 words).`,
-          messages:[{role:"user",content:q}] })
+        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:600,
+          system:`Cannabis strain database. Return ONLY a raw JSON array, no markdown, no extra text. Up to 4 matching strains. Each object must have exactly: name(string), type("Indica"|"Sativa"|"Hybrid"), thc(number 10-32), cbd(number 0-20), effects(array of 3 strings), flavors(array of 3 strings), description(string max 8 words). Respond with ONLY the JSON array starting with [`,
+          messages:[{role:"user",content:`Cannabis strains matching: ${q}`}] })
       });
       const d = await r.json();
-      const txt = d.content?.map(b=>b.text||"").join("").replace(/```json|```/g,"").trim();
-      setAiRes(JSON.parse(txt)||[]);
+      const txt = d.content?.map(b=>b.text||"").join("").trim();
+      const start = txt.indexOf("[");
+      const end   = txt.lastIndexOf("]");
+      if(start!==-1&&end!==-1) setAiRes(JSON.parse(txt.slice(start,end+1))||[]);
     } catch { setAiRes([]); }
     setAiLoad(false);
   },[]);
@@ -495,11 +668,12 @@ export default function App() {
   const onSQ = v => {
     setSq(v); setAiRes([]); setSdrop(true);
     clearTimeout(aiTimer.current);
-    if(v.length>=3 && allStrains.filter(s=>s.name.toLowerCase().includes(v.toLowerCase())).length<2)
-      aiTimer.current = setTimeout(()=>tryAI(v),800);
+    if(v.length>=2 && allStrains.filter(s=>s.name.toLowerCase().includes(v.toLowerCase())).length<2)
+      aiTimer.current = setTimeout(()=>tryAI(v),600);
   };
 
   const pickStrain = s => {
+    Sound.play("select");
     if(!STRAIN_DB.find(x=>x.name.toLowerCase()===s.name.toLowerCase()) &&
        !custom.find(x=>x.name.toLowerCase()===s.name.toLowerCase()))
       setCustom(p=>[s,...p]);
@@ -508,150 +682,229 @@ export default function App() {
   };
 
   const dropList = [...localMatches, ...aiRes.filter(r=>!localMatches.find(l=>l.name.toLowerCase()===r.name.toLowerCase()))];
-  const curMethod = METHODS.find(m=>m.id===form.method)||METHODS[0];
-  const curStrain = allStrains.find(s=>s.name===form.strain);
 
-  const toggle = (key,val) => setForm(f=>({...f,[key]:f[key].includes(val)?f[key].filter(x=>x!==val):[...f[key],val]}));
-
-  const saveSession = () => {
-    setSessions(p=>[{...form,id:Date.now()},...p]);
-    setSaved(true);
-    setTimeout(()=>{ setSaved(false); setForm(mkForm()); setStep(0); setTab("home"); },1600);
+  const toggle = (key,val) => {
+    Sound.play("tap");
+    setForm(f=>({...f,[key]:f[key].includes(val)?f[key].filter(x=>x!==val):[...f[key],val]}));
   };
 
-  const saveEdit = (updated) => {
-    setSessions(p=>p.map(s=>s.id===updated.id?updated:s));
-    setEditingSession(null);
+  const setRating = (id,v) => setForm(f=>({...f,ratings:{...f.ratings,[id]:v}}));
+
+  // Load AI anecdotes for a strain
+  const loadAnecdotes = async (strainName) => {
+    if (strainAnecdotes[strainName]) return;
+    setLoadingAnecdotes(true);
+    try {
+      const r = await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800,
+          system:`You are a cannabis strain expert. Generate 3 authentic-sounding user anecdotes/reviews for the strain given. Return ONLY a raw JSON array of 3 objects, no markdown. Each object: { "user": "anonymous username like DesertFox42", "rating": number 1-5, "review": "2-3 sentence personal experience written in first person, conversational, specific about effects and context", "method": "how they consumed it" }. Make them feel real and varied — different experiences, methods, outcomes.`,
+          messages:[{role:"user",content:`Generate reviews for: ${strainName}`}] })
+      });
+      const d = await r.json();
+      const txt = d.content?.map(b=>b.text||"").join("").trim();
+      const start = txt.indexOf("["); const end = txt.lastIndexOf("]");
+      if(start!==-1&&end!==-1){
+        const parsed = JSON.parse(txt.slice(start,end+1));
+        setStrainAnecdotes(prev=>({...prev,[strainName]:parsed}));
+      }
+    } catch {}
+    setLoadingAnecdotes(false);
   };
 
   // Photo handler
   const handlePhoto = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if(!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setForm(f=>({...f, photos:[...f.photos, ev.target.result]}));
+    reader.onload = ev => setForm(f=>({...f,photos:[...f.photos,ev.target.result]}));
     reader.readAsDataURL(file);
   };
 
-  // Data export
-  const exportData = () => {
-    const headers = ["Date","Strain","Method","Amount","Overall","Taste","Potency","Smooth","Effect","Value","Intensity","MoodBefore","MoodAfter","Effects","Flavors","Brand","Source","Notes"];
-    const rows = sessions.map(s=>[
-      s.date, s.strain, s.method, s.amount,
-      s.ratings?.overall||"", s.ratings?.taste||"", s.ratings?.potency||"",
-      s.ratings?.smoothness||"", s.ratings?.effect||"", s.ratings?.value||"",
-      s.intensity||"", s.moodBefore, s.moodAfter,
-      (s.effects||[]).join("|"), (s.flavors||[]).join("|"),
-      s.brand||"", s.source||"", (s.notes||"").replace(/,/g," ")
-    ]);
-    const csv = [headers, ...rows].map(r=>r.join(",")).join("\n");
-    const blob = new Blob([csv], {type:"text/csv"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `terp-journal-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click(); URL.revokeObjectURL(url);
+  const saveSession = () => {
+    Sound.play("save");
+    setSessions(p=>[{...form,id:Date.now()},...p]);
+    setSaved(true);
+    setTimeout(()=>{ setSaved(false); setForm(mkForm()); setStep(0); setTab("home"); },1800);
   };
+
+  const saveEdit = updated => { setSessions(p=>p.map(s=>s.id===updated.id?updated:s)); setEditingSession(null); };
 
   const exportJSON = () => {
-    const data = { sessions, custom, profile, exportedAt: new Date().toISOString() };
-    const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+    const blob = new Blob([JSON.stringify({sessions,custom,profile,exportedAt:new Date().toISOString()},null,2)],{type:"application/json"});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `terp-journal-backup-${new Date().toISOString().slice(0,10)}.json`;
-    a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement("a"); a.href=url; a.download=`terp-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const importJSON = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = JSON.parse(ev.target.result);
-        if (data.sessions) setSessions(data.sessions);
-        if (data.custom)   setCustom(data.custom);
-        if (data.profile)  setProfile(data.profile);
-        alert("Data restored successfully!");
-      } catch { alert("Invalid backup file."); }
-    };
+  const exportCSV = () => {
+    const headers=["Date","Strain","Method","Amount","Overall","Taste","Potency","Smooth","Effect","Value","Intensity","MoodBefore","MoodAfter","Effects","Flavors","Brand","Notes"];
+    const rows=sessions.map(s=>[s.date,s.strain,s.method,s.amount,s.ratings?.overall||"",s.ratings?.taste||"",s.ratings?.potency||"",s.ratings?.smoothness||"",s.ratings?.effect||"",s.ratings?.value||"",s.intensity||"",s.moodBefore,s.moodAfter,(s.effects||[]).join("|"),(s.flavors||[]).join("|"),s.brand||"",(s.notes||"").replace(/,/g," ")]);
+    const csv=[headers,...rows].map(r=>r.join(",")).join("\n");
+    const blob=new Blob([csv],{type:"text/csv"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download=`terp-export-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importJSON = e => {
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=ev=>{ try{ const d=JSON.parse(ev.target.result); if(d.sessions) setSessions(d.sessions); if(d.custom) setCustom(d.custom); if(d.profile) setProfile(d.profile); alert("Restored!"); }catch{ alert("Invalid file."); } };
     reader.readAsText(file);
   };
 
-  // Analytics
-  const streak = (() => {
-    if(!sessions.length) return 0;
-    const days=[...new Set(sessions.map(s=>new Date(s.date).toDateString()))];
-    let count=0,d=new Date();
-    for(let i=0;i<30;i++){
-      if(days.includes(d.toDateString())){ count++; d.setDate(d.getDate()-1); }
-      else if(i===0){ d.setDate(d.getDate()-1); if(days.includes(d.toDateString())){count++;d.setDate(d.getDate()-1);}else break; }
-      else break;
-    }
-    return count;
-  })();
+  // Personal records
+  const personalRecords = sessions.length ? [
+    { label:"Highest rated session",  value: sessions.reduce((a,b)=>(b.ratings?.overall||0)>(a.ratings?.overall||0)?b:a).strain, sub: `${sessions.reduce((a,b)=>(b.ratings?.overall||0)>(a.ratings?.overall||0)?b:a).ratings?.overall}/10` },
+    { label:"Most used strain",        value: strainNames.sort((a,b)=>sessions.filter(s=>s.strain===b).length-sessions.filter(s=>s.strain===a).length)[0], sub: `${sessions.filter(s=>s.strain===strainNames[0]).length} times` },
+    { label:"Most consistent effects", value: EFFECTS.map(e=>({e,n:sessions.filter(s=>s.effects?.includes(e)).length})).sort((a,b)=>b.n-a.n)[0]?.e||"—", sub:"most logged effect" },
+  ] : [];
 
-  const avgRating    = sessions.length?(sessions.reduce((a,s)=>a+(s.ratings?.overall||0),0)/sessions.length).toFixed(1):"—";
-  const strainNames  = [...new Set(sessions.map(s=>s.strain))].filter(Boolean);
-  const qualifiedStrains = strainNames.filter(n=>sessions.filter(s=>s.strain===n).length>=2);
-  const recentStrains = [...new Set(sessions.slice(0,5).map(s=>s.strain))].filter(Boolean).slice(0,3);
-  const lastSession  = sessions[0];
-  const trend = [...sessions].reverse().slice(-10).map((s,i)=>({
-    i:i+1, r:s.ratings?.overall||0,
-    label:new Date(s.date).toLocaleDateString("en-AU",{month:"short",day:"numeric"})
-  }));
-  const effectCounts = EFFECTS.map(e=>({e,n:sessions.filter(s=>s.effects?.includes(e)).length})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n).slice(0,6);
-  const TT = { contentStyle:{background:"#0a150b",border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:11} };
+  // Onboarding
+  const [quizStep, setQuizStep] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const QUIZ = [
+    { id:"experience", q:"How long have you been using cannabis?", opts:["First time","< 1 year","1–3 years","3–5 years","5+ years"] },
+    { id:"frequency",  q:"How often do you consume?",              opts:["Rarely","1–2x/week","3–4x/week","Daily","Multiple daily"] },
+    { id:"goal",       q:"What's your main reason for using?",     opts:["Relaxation","Pain/medical","Sleep","Creativity","Social","Exploration"] },
+    { id:"method",     q:"Preferred method?",                      opts:["Joints","Vaporiser","Bong/pipe","Edibles","Mixed"] },
+    { id:"pastStrains",q:"Any strains you've loved before?",       type:"text", placeholder:"e.g. Blue Dream, OG Kush (optional — skip if unsure)" },
+  ];
 
-  const setRating = (id,v) => setForm(f=>({...f,ratings:{...f.ratings,[id]:v}}));
+  if (!profile) {
+    const current = QUIZ[quizStep];
+    const isLast  = quizStep === QUIZ.length - 1;
+    return (
+      <div style={{ minHeight:"100vh", maxWidth:500, margin:"0 auto", background:C.bg, color:C.text, fontFamily:"system-ui,sans-serif", padding:24 }}>
+        <div style={{ maxWidth:440, margin:"0 auto" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:28 }}>
+            <LogoMark size={40}/>
+            <div>
+              <div style={{ fontSize:20, fontWeight:800, color:C.accent }}>Welcome to Terp Journal</div>
+              <div style={{ fontSize:12, color:C.muted }}>Quick setup — takes 30 seconds</div>
+            </div>
+          </div>
+          <div style={{ height:4, background:C.faint, borderRadius:2, marginBottom:28 }}>
+            <div style={{ height:"100%", borderRadius:2, background:C.accent, width:`${(quizStep/QUIZ.length)*100}%`, transition:"width 0.3s" }}/>
+          </div>
+          <div style={{ fontSize:18, fontWeight:600, color:C.text, marginBottom:6, lineHeight:1.4 }}>{current.q}</div>
+          <div style={{ fontSize:12, color:C.muted, marginBottom:20 }}>Question {quizStep+1} of {QUIZ.length}</div>
+          {current.type==="text" ? (
+            <div>
+              <input placeholder={current.placeholder} value={quizAnswers[current.id]||""}
+                onChange={e=>setQuizAnswers(a=>({...a,[current.id]:e.target.value}))}
+                style={{ width:"100%", padding:"14px", background:C.card, border:`1.5px solid ${C.border}`,
+                  borderRadius:12, color:C.text, fontSize:14, boxSizing:"border-box", marginBottom:14 }}/>
+              <button onClick={()=>{ Sound.play("save"); setProfile({...quizAnswers,completedAt:new Date().toISOString()}); }}
+                style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
+                  background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07", fontSize:15, fontWeight:700 }}>
+                Get Started →
+              </button>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {current.opts.map(opt=>(
+                <button key={opt} onClick={()=>{ Sound.play("select"); const upd={...quizAnswers,[current.id]:opt}; setQuizAnswers(upd); if(!isLast) setQuizStep(s=>s+1); else setProfile({...upd,completedAt:new Date().toISOString()}); }}
+                  style={{ padding:"14px 18px", borderRadius:12, border:`1.5px solid ${C.border}`,
+                    background:C.card, color:C.text, fontSize:14, cursor:"pointer", textAlign:"left",
+                    fontFamily:"system-ui" }}>
+                  {opt}
+                </button>
+              ))}
+            </div>
+          )}
+          <button onClick={()=>setProfile({completedAt:new Date().toISOString()})}
+            style={{ marginTop:16, width:"100%", padding:"8px", borderRadius:8, border:"none",
+              background:"transparent", color:C.muted, cursor:"pointer", fontSize:12 }}>
+            Skip setup
+          </button>
+        </div>
+        <style>{`*{box-sizing:border-box} input:focus{outline:2px solid #a3e63540!important}`}</style>
+      </div>
+    );
+  }
 
-  // ── RENDER ────────────────────────────────────────────────────────────────
+  // ── MAIN RENDER ───────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight:"100vh", maxWidth:500, margin:"0 auto", background:C.bg, color:C.text, fontFamily:"system-ui,-apple-system,sans-serif", fontSize:15 }}>
+    <div style={{ minHeight:"100vh", maxWidth:500, margin:"0 auto", background:C.bg, color:C.text, fontFamily:"system-ui,-apple-system,sans-serif" }}>
 
-      {/* ONBOARDING */}
-      {!profile && <OnboardingQuiz onComplete={(ans)=>setProfile({...ans, completedAt: new Date().toISOString()})}/>}
+      {newMilestone && <MilestoneToast milestone={newMilestone} onClose={()=>setNewMilestone(null)}/>}
+      {levelUpRank  && <LevelUpOverlay rank={levelUpRank}      onClose={()=>setLevelUpRank(null)}/>}
 
-      {/* EDIT MODAL */}
-      {editingSession && <EditModal session={editingSession} strains={allStrains} onSave={saveEdit} onClose={()=>setEditingSession(null)}/>}
-
-      {/* PHOTO TIPS */}
-      {showPhotoTips && <PhotoTips onClose={()=>setShowPhotoTips(false)}/>}
-
-      {/* SAVE SUCCESS */}
       {saved && (
         <div style={{ position:"fixed", inset:0, zIndex:200, display:"flex", alignItems:"center", justifyContent:"center",
           background:"rgba(8,15,9,0.92)", backdropFilter:"blur(6px)" }}>
           <div style={{ textAlign:"center" }}>
             <div style={{ fontSize:64, marginBottom:16 }}>✅</div>
             <div style={{ fontSize:22, fontWeight:700, color:C.accent }}>Session saved!</div>
-            <div style={{ fontSize:14, color:C.muted, marginTop:6 }}>Your journal is growing 🌿</div>
+            <div style={{ fontSize:14, color:C.muted, marginTop:6 }}>+10 XP earned 🌿</div>
           </div>
         </div>
       )}
 
-      {/* HEADER */}
+      {/* Passport modal */}
+      {passportStrain && (
+        <div style={{ position:"fixed", inset:0, zIndex:150, background:"rgba(8,15,9,0.96)", overflowY:"auto", padding:20 }}>
+          <div style={{ maxWidth:480, margin:"0 auto" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16 }}>
+              <div style={{ fontSize:16, fontWeight:700, color:C.accent }}>🛂 Strain Passport</div>
+              <button onClick={()=>setPassportStrain(null)} style={{ background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer" }}>✕</button>
+            </div>
+            <PassportCard strain={passportStrain} sessions={sessions} allStrains={allStrains}/>
+            {/* AI anecdotes */}
+            <Card style={{ marginTop:12 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:C.text }}>💬 Community Anecdotes</div>
+                {!strainAnecdotes[passportStrain] && (
+                  <button onClick={()=>loadAnecdotes(passportStrain)} disabled={loadingAnecdotes}
+                    style={{ padding:"6px 12px", borderRadius:8, border:`1px solid ${C.accent}44`,
+                      background:C.accentDim, color:C.accent, cursor:"pointer", fontSize:12, opacity:loadingAnecdotes?0.6:1 }}>
+                    {loadingAnecdotes?"Loading...":"Load reviews"}
+                  </button>
+                )}
+              </div>
+              {strainAnecdotes[passportStrain] ? (
+                strainAnecdotes[passportStrain].map((a,i)=>(
+                  <div key={i} style={{ background:"#0a150b", borderRadius:12, padding:12, marginBottom:8 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                      <span style={{ fontSize:12, fontWeight:600, color:C.accent }}>@{a.user}</span>
+                      <span style={{ fontSize:11, color:C.amber }}>{"⭐".repeat(a.rating)}</span>
+                    </div>
+                    <div style={{ fontSize:13, color:C.text, lineHeight:1.5, marginBottom:4 }}>{a.review}</div>
+                    <div style={{ fontSize:11, color:C.muted }}>via {a.method}</div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize:12, color:C.muted, textAlign:"center", padding:"12px 0" }}>
+                  {loadingAnecdotes?"Generating reviews...":"Tap 'Load reviews' to see community anecdotes"}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <header style={{ position:"sticky", top:0, zIndex:50, background:C.bg+"f5",
         backdropFilter:"blur(12px)", borderBottom:`1px solid ${C.border}`,
         padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <LogoMark size={32}/>
           <div>
-            <div style={{ fontSize:15, fontWeight:800, letterSpacing:"-0.02em", color:C.accent }}>Terp Journal</div>
-            <div style={{ fontSize:10, color:C.muted }}>cannabis companion</div>
+            <div style={{ fontSize:15, fontWeight:800, color:C.accent }}>Terp Journal</div>
+            <div style={{ fontSize:10, color:rank.color }}>{rank.icon} {rank.title}</div>
           </div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          {streak>0 && (
-            <div style={{ background:C.amberDim, border:`1px solid ${C.amber}44`, borderRadius:20, padding:"4px 10px",
-              fontSize:12, color:C.amber }}>🔥 {streak}d</div>
-          )}
+          {streak>0&&<div style={{ background:C.amberDim, border:`1px solid ${C.amber}44`, borderRadius:20, padding:"4px 10px", fontSize:12, color:C.amber }}>🔥{streak}d</div>}
+          <div style={{ background:C.accentDim, border:`1px solid ${C.accent}44`, borderRadius:20, padding:"4px 10px", fontSize:12, color:C.accent }}>{xp}xp</div>
         </div>
       </header>
 
-      {/* NAV */}
+      {/* Nav */}
       <nav style={{ display:"flex", background:C.bg, borderBottom:`1px solid ${C.border}`, position:"sticky", top:57, zIndex:49 }}>
-        {[{id:"home",e:"🏠",l:"Home"},{id:"log",e:"🌿",l:"Log"},{id:"sessions",e:"📋",l:"History"},{id:"insights",e:"📊",l:"Insights"},{id:"more",e:"⚙️",l:"More"}].map(t=>(
-          <button key={t.id} onClick={()=>{ setTab(t.id); if(t.id==="log")setStep(0); }} style={{
+        {[{id:"home",e:"🏠",l:"Home"},{id:"log",e:"🌿",l:"Log"},{id:"sessions",e:"📋",l:"History"},{id:"passport",e:"🛂",l:"Passport"},{id:"more",e:"⚙️",l:"More"}].map(t=>(
+          <button key={t.id} onClick={()=>{ Sound.play("swipe"); setTab(t.id); if(t.id==="log")setStep(0); }} style={{
             flex:1, padding:"9px 2px", border:"none", cursor:"pointer", background:"transparent",
             borderBottom:tab===t.id?`2px solid ${C.accent}`:"2px solid transparent",
             color:tab===t.id?C.accent:C.muted, fontSize:9, letterSpacing:"0.05em", fontFamily:"system-ui",
@@ -672,18 +925,16 @@ export default function App() {
                 <div style={{ position:"relative", zIndex:1, textAlign:"center", padding:"0 20px" }}>
                   <LogoMark size={72}/>
                   <div style={{ fontSize:26, fontWeight:800, color:C.accent, marginTop:16, marginBottom:8 }}>Terp Journal</div>
-                  <div style={{ fontSize:15, color:C.muted, lineHeight:1.6, marginBottom:28 }}>
-                    Track your cannabis experiences.<br/>Discover what actually works for you.
-                  </div>
-                  <button onClick={()=>setTab("log")} style={{
+                  <div style={{ fontSize:15, color:C.muted, lineHeight:1.6, marginBottom:8 }}>Track your cannabis. Discover what works.</div>
+                  <div style={{ fontSize:13, color:rank.color, marginBottom:28 }}>{rank.icon} You start as a {rank.title}</div>
+                  <button onClick={()=>{ Sound.play("select"); setTab("log"); }} style={{
                     padding:"14px 32px", borderRadius:50, border:"none", cursor:"pointer",
                     background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07",
-                    fontSize:16, fontWeight:800, boxShadow:`0 4px 24px ${C.accent}44`, marginBottom:32,
-                  }}>
+                    fontSize:16, fontWeight:800, boxShadow:`0 4px 24px ${C.accent}44`, marginBottom:32 }}>
                     Log your first session →
                   </button>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
-                    {[["🔍","80+ Strains","Instant search"],["📊","Real Insights","What works for you"],["🧠","AI Analysis","Verify your strains"]].map(([e,h,d])=>(
+                    {[["🛂","Strain Passport","Collect every strain"],["🏆","Earn Ranks","From Novice to Sommelier"],["🧠","Real Insights","What works for YOU"]].map(([e,h,d])=>(
                       <Card key={h} style={{ textAlign:"center", padding:12 }}>
                         <div style={{ fontSize:22, marginBottom:6 }}>{e}</div>
                         <div style={{ fontSize:11, fontWeight:600, color:C.text, marginBottom:2 }}>{h}</div>
@@ -695,12 +946,20 @@ export default function App() {
               </div>
             ) : (
               <div>
+                {/* XP + rank */}
+                <Card style={{ marginBottom:14 }}>
+                  <XPBar xp={xp}/>
+                </Card>
+
+                {/* Daily ritual */}
+                <DailyRitual sessions={sessions} onLog={()=>{ Sound.play("select"); setTab("log"); }}/>
+
                 {/* Stats */}
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:16 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:14 }}>
                   {[
-                    {v:sessions.length, l:"Sessions", i:"📋", c:C.accent},
-                    {v:avgRating,       l:"Avg Rating",i:"⭐", c:C.amber},
-                    {v:strainNames.length,l:"Strains", i:"🌱", c:"#34d399"},
+                    {v:sessions.length, l:"Sessions",   c:C.accent,  i:"📋"},
+                    {v:avgRating,        l:"Avg Rating", c:C.amber,   i:"⭐"},
+                    {v:strainNames.length,l:"Strains",   c:"#34d399", i:"🌱"},
                   ].map(x=>(
                     <Card key={x.l} style={{ textAlign:"center", padding:12 }}>
                       <div style={{ fontSize:18, marginBottom:2 }}>{x.i}</div>
@@ -710,18 +969,6 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Profile summary if onboarding done */}
-                {profile?.goal && (
-                  <Card style={{ marginBottom:14, padding:12 }}>
-                    <div style={{ fontSize:11, color:C.muted, marginBottom:6 }}>YOUR PROFILE</div>
-                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                      {[profile.experience, profile.frequency, profile.goal, profile.method].filter(Boolean).map(v=>(
-                        <span key={v} style={{ fontSize:11, padding:"3px 9px", background:C.accentDim, borderRadius:10, color:C.accent }}>{v}</span>
-                      ))}
-                    </div>
-                  </Card>
-                )}
-
                 {/* Quick log */}
                 {recentStrains.length>0 && (
                   <Card style={{ marginBottom:14 }}>
@@ -730,76 +977,78 @@ export default function App() {
                       {recentStrains.map(name=>{
                         const s=allStrains.find(x=>x.name===name);
                         return (
-                          <button key={name} onClick={()=>{ setForm(f=>({...f,strain:name})); setStep(1); setTab("log"); }}
+                          <button key={name} onClick={()=>{ Sound.play("select"); setForm(f=>({...f,strain:name})); setStep(1); setTab("log"); }}
                             style={{ padding:"8px 14px", borderRadius:20, border:`1.5px solid ${s?typeColor(s.type)+"44":C.border}`,
-                              background:s?typeBg(s.type):"transparent", color:s?typeColor(s.type):C.text, fontSize:13, cursor:"pointer", fontWeight:500 }}>
+                              background:s?typeBg(s.type):"transparent", color:s?typeColor(s.type):C.text, fontSize:13, cursor:"pointer" }}>
                             {name}
                           </button>
                         );
                       })}
-                      <button onClick={()=>{ setStep(0); setTab("log"); }}
-                        style={{ padding:"8px 14px", borderRadius:20, border:`1.5px dashed ${C.border}`,
-                          background:"transparent", color:C.muted, fontSize:13, cursor:"pointer" }}>
-                        + New
-                      </button>
                     </div>
                   </Card>
                 )}
 
-                {/* Last session */}
-                {lastSession && (
+                {/* Recent milestones */}
+                {earnedMilestones.length>0 && (
                   <Card style={{ marginBottom:14 }}>
-                    <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>LAST SESSION</div>
-                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                      <div style={{ fontSize:28 }}>{METHODS.find(m=>m.id===lastSession.method)?.emoji||"🌿"}</div>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontWeight:700, fontSize:15, color:C.text }}>{lastSession.strain}</div>
-                        <div style={{ fontSize:11, color:C.muted }}>{new Date(lastSession.date).toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"})}</div>
-                        <div style={{ display:"flex", gap:5, marginTop:5, flexWrap:"wrap" }}>
-                          {lastSession.effects?.slice(0,3).map(e=>(
-                            <span key={e} style={{ fontSize:10, padding:"2px 8px", background:C.accentDim, borderRadius:10, color:C.accent }}>{e}</span>
-                          ))}
+                    <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>ACHIEVEMENTS ({earnedMilestones.length}/{MILESTONES.length})</div>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                      {MILESTONES.map(m=>{
+                        const earned = unlockedMilestones.includes(m.id);
+                        return (
+                          <div key={m.id} style={{ fontSize:20, opacity:earned?1:0.2, title:m.title }}
+                            title={`${m.title}: ${m.desc}`}>
+                            {m.icon}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Personal records */}
+                {personalRecords.length>0 && (
+                  <Card style={{ marginBottom:14 }}>
+                    <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>PERSONAL RECORDS</div>
+                    {personalRecords.map(r=>(
+                      <div key={r.label} style={{ display:"flex", justifyContent:"space-between", marginBottom:8, paddingBottom:8, borderBottom:`1px solid ${C.border}` }}>
+                        <span style={{ fontSize:12, color:C.muted }}>{r.label}</span>
+                        <div style={{ textAlign:"right" }}>
+                          <div style={{ fontSize:13, fontWeight:700, color:C.accent }}>{r.value}</div>
+                          <div style={{ fontSize:10, color:C.muted }}>{r.sub}</div>
                         </div>
                       </div>
-                      <div style={{ textAlign:"center" }}>
-                        <div style={{ fontSize:24, fontWeight:800, color:C.accent }}>{lastSession.ratings?.overall||"?"}</div>
-                        <div style={{ fontSize:9, color:C.muted }}>/10</div>
-                      </div>
-                    </div>
+                    ))}
                   </Card>
                 )}
 
                 {/* Strain intelligence teaser */}
                 {qualifiedStrains.length>0 ? (
-                  <button onClick={()=>setTab("insights")} style={{
+                  <button onClick={()=>{ Sound.play("tap"); setTab("passport"); }} style={{
                     width:"100%", padding:"14px", borderRadius:16, border:`1px solid ${C.accent}44`,
                     background:`linear-gradient(135deg,${C.card},#0d2010)`, cursor:"pointer", textAlign:"left",
-                    display:"flex", alignItems:"center", gap:12, marginBottom:14,
-                  }}>
+                    display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
                     <div style={{ fontSize:28 }}>🧠</div>
                     <div>
                       <div style={{ fontSize:13, fontWeight:700, color:C.accent }}>Strain Intelligence ready</div>
-                      <div style={{ fontSize:11, color:C.muted }}>See what {qualifiedStrains[0]} actually does to you →</div>
+                      <div style={{ fontSize:11, color:C.muted }}>See your {qualifiedStrains[0]} passport →</div>
                     </div>
                   </button>
                 ) : (
                   <Card style={{ marginBottom:14 }}>
-                    <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                    <div style={{ display:"flex", gap:12 }}>
                       <div style={{ fontSize:28 }}>🧠</div>
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:4 }}>Strain Intelligence</div>
-                        <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>
-                          {sessions.length===0
-                            ? "Log sessions to unlock your personal strain effect breakdown."
-                            : `Log ${2-Math.min(2,sessions.filter(s=>s.strain===sessions[0]?.strain).length)} more "${sessions[0]?.strain}" session${sessions.filter(s=>s.strain===sessions[0]?.strain).length===1?"":"s"} to unlock insights.`}
+                        <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>
+                          Log 2 sessions with the same strain to unlock your personal effect profile.
                         </div>
-                        <div style={{ height:6, background:C.faint, borderRadius:3, overflow:"hidden" }}>
+                        <div style={{ height:5, background:C.faint, borderRadius:3 }}>
                           <div style={{ height:"100%", borderRadius:3, background:C.accent,
-                            width:`${Math.min(100,sessions.filter(s=>s.strain===sessions[0]?.strain).length/2*100)}%`,
-                            transition:"width 0.5s" }}/>
+                            width:`${Math.min(100,sessions.filter(s=>s.strain===sessions[0]?.strain).length/2*100)}%` }}/>
                         </div>
                         <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>
-                          {sessions.filter(s=>s.strain===sessions[0]?.strain).length}/2 sessions needed
+                          {sessions.filter(s=>s.strain===sessions[0]?.strain).length}/2 sessions with "{sessions[0]?.strain}"
                         </div>
                       </div>
                     </div>
@@ -810,26 +1059,25 @@ export default function App() {
           </div>
         )}
 
-        {/* ════ LOG WIZARD ════ */}
+        {/* ════ LOG ════ */}
         {tab==="log" && (
           <div>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
               <div style={{ fontSize:14, fontWeight:600, color:C.text }}>
-                {["Pick your strain","Method & amount","Mood","Rate it","Wellbeing (optional)"][step]}
+                {["Pick your strain","Method & amount","Mood check","Rate it","Wellbeing"][step]}
               </div>
-              <StepDots current={step} total={5} onGo={setStep}/>
+              <StepDots current={step} total={5} onGo={s=>{ Sound.play("swipe"); setStep(s); }}/>
             </div>
-            <div style={{ fontSize:12, color:C.muted, marginBottom:18 }}>
-              {["Search 80+ strains instantly","How and how much","How are you feeling?","Score the experience","Track health effects — skip if you want"][step]}
+            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>
+              {["Search 80+ strains","How and how much?","How are you feeling?","Score the experience","Track health effects (optional)"][step]}
             </div>
 
             {/* STEP 0: STRAIN */}
             {step===0 && (
               <div>
                 <div ref={searchRef} style={{ position:"relative", marginBottom:16 }}>
-                  <input value={sq} onChange={e=>onSQ(e.target.value)}
-                    onFocus={()=>sq.length>=1&&setSdrop(true)}
-                    placeholder="Search strain, effect, or type..."
+                  <input value={sq} onChange={e=>onSQ(e.target.value)} onFocus={()=>sq.length>=1&&setSdrop(true)}
+                    placeholder="Search by name, effect, or type..."
                     style={{ width:"100%", padding:"14px 42px 14px 16px", background:C.card,
                       border:`1.5px solid ${sq?"#2a5a2a":C.border}`, borderRadius:14, color:C.text,
                       fontSize:14, boxSizing:"border-box", outline:"none" }}/>
@@ -844,8 +1092,7 @@ export default function App() {
                       {dropList.map((r,i)=>(
                         <button key={r.name+i} onClick={()=>pickStrain(r)} style={{
                           width:"100%", padding:"12px 14px", background:"transparent", border:"none",
-                          borderBottom:i<dropList.length-1?`1px solid ${C.border}`:"none",
-                          cursor:"pointer", textAlign:"left" }}
+                          borderBottom:i<dropList.length-1?`1px solid ${C.border}`:"none", cursor:"pointer", textAlign:"left" }}
                           onMouseEnter={e=>e.currentTarget.style.background="#0d2a0d"}
                           onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:3 }}>
@@ -857,20 +1104,20 @@ export default function App() {
                           <div style={{ fontSize:11, color:C.muted }}>{r.description}</div>
                         </button>
                       ))}
-                      {aiLoad&&<div style={{ padding:12, fontSize:11, color:C.muted, textAlign:"center", borderTop:`1px solid ${C.border}` }}>Searching AI…</div>}
+                      {aiLoad&&<div style={{ padding:12, fontSize:11, color:C.muted, textAlign:"center", borderTop:`1px solid ${C.border}` }}>Searching AI database…</div>}
                     </div>
                   )}
                 </div>
 
                 {curStrain ? (
-                  <Card style={{ border:`2px solid ${typeColor(curStrain.type)}33`, marginBottom:16, boxShadow:`0 0 20px ${typeColor(curStrain.type)}15` }}>
+                  <Card style={{ border:`2px solid ${typeColor(curStrain.type)}33`, marginBottom:14, boxShadow:`0 0 20px ${typeColor(curStrain.type)}10` }}>
                     <div style={{ display:"flex", justifyContent:"space-between" }}>
                       <div style={{ flex:1 }}>
                         <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:6 }}>
                           <span style={{ fontSize:17, fontWeight:800, color:C.text }}>{curStrain.name}</span>
                           <span style={{ fontSize:10, padding:"2px 8px", background:typeBg(curStrain.type), border:`1px solid ${typeColor(curStrain.type)}`, borderRadius:10, color:typeColor(curStrain.type) }}>{curStrain.type}</span>
                         </div>
-                        <div style={{ display:"flex", gap:12, fontSize:13, marginBottom:8 }}>
+                        <div style={{ display:"flex", gap:12, fontSize:13, marginBottom:6 }}>
                           <span style={{ color:C.amber, fontWeight:600 }}>THC {curStrain.thc}%</span>
                           {curStrain.cbd>0&&<span style={{ color:"#34d399", fontWeight:600 }}>CBD {curStrain.cbd}%</span>}
                         </div>
@@ -881,13 +1128,18 @@ export default function App() {
                       </div>
                       <button onClick={()=>setForm(f=>({...f,strain:""}))} style={{ background:"transparent", border:"none", color:C.muted, cursor:"pointer", fontSize:18, alignSelf:"flex-start" }}>✕</button>
                     </div>
+                    <button onClick={()=>{ setPassportStrain(form.strain); loadAnecdotes(form.strain); }}
+                      style={{ marginTop:10, padding:"7px 14px", borderRadius:8, border:`1px solid ${C.accent}44`,
+                        background:C.accentDim, color:C.accent, cursor:"pointer", fontSize:11 }}>
+                      🛂 View Strain Passport →
+                    </button>
                   </Card>
                 ) : (
                   <div>
                     <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>Popular strains:</div>
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:20 }}>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:16 }}>
                       {STRAIN_DB.slice(0,8).map(s=>(
-                        <button key={s.name} onClick={()=>setForm(f=>({...f,strain:s.name}))}
+                        <button key={s.name} onClick={()=>{ Sound.play("select"); setForm(f=>({...f,strain:s.name})); }}
                           style={{ padding:"7px 14px", borderRadius:20, border:`1px solid ${typeColor(s.type)}33`,
                             background:typeBg(s.type), color:typeColor(s.type), fontSize:12, cursor:"pointer" }}>
                           {s.name}
@@ -895,10 +1147,9 @@ export default function App() {
                       ))}
                     </div>
                     {!addingStrain ? (
-                      <button onClick={()=>setAddingStrain(true)} style={{
-                        width:"100%", padding:"12px", borderRadius:12, border:`1.5px dashed ${C.border}`,
-                        background:"transparent", color:C.muted, cursor:"pointer", fontSize:13 }}>
-                        + Add a strain not in the list
+                      <button onClick={()=>setAddingStrain(true)} style={{ width:"100%", padding:"12px", borderRadius:12,
+                        border:`1.5px dashed ${C.border}`, background:"transparent", color:C.muted, cursor:"pointer", fontSize:13 }}>
+                        + Add a custom strain
                       </button>
                     ) : (
                       <Card>
@@ -914,7 +1165,7 @@ export default function App() {
                           </select>
                         </div>
                         <div style={{ display:"flex", gap:8 }}>
-                          <button onClick={()=>{ if(newS.name){ setCustom(p=>[{...newS,effects:[],flavors:[],description:""},...p]); setForm(f=>({...f,strain:newS.name})); setNewS({name:"",type:"Hybrid",thc:"",cbd:"",description:""}); setAddingStrain(false); }}}
+                          <button onClick={()=>{ if(newS.name){ Sound.play("select"); setCustom(p=>[{...newS,effects:[],flavors:[],description:""},...p]); setForm(f=>({...f,strain:newS.name})); setNewS({name:"",type:"Hybrid",thc:"",cbd:"",description:""}); setAddingStrain(false); }}}
                             style={{ flex:1, padding:"10px", borderRadius:10, border:"none", background:C.accent, color:"#060d07", fontWeight:700, cursor:"pointer", fontSize:13 }}>
                             Save & Use
                           </button>
@@ -928,6 +1179,32 @@ export default function App() {
                   </div>
                 )}
 
+                {/* Photos */}
+                {form.strain && (
+                  <Card style={{ marginTop:12 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color:C.text }}>📸 Add Bud Photos</div>
+                      <button onClick={()=>setShowPhotoTips(true)} style={{ fontSize:11, color:C.accent, background:"transparent", border:"none", cursor:"pointer" }}>Tips →</button>
+                    </div>
+                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                      {form.photos.map((p,i)=>(
+                        <div key={i} style={{ position:"relative" }}>
+                          <img src={p} style={{ width:70, height:70, borderRadius:10, objectFit:"cover" }} alt="bud"/>
+                          <button onClick={()=>setForm(f=>({...f,photos:f.photos.filter((_,j)=>j!==i)}))}
+                            style={{ position:"absolute", top:-6, right:-6, width:20, height:20, borderRadius:"50%",
+                              background:"#ef4444", border:"none", color:"white", cursor:"pointer", fontSize:11, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+                        </div>
+                      ))}
+                      <label style={{ width:70, height:70, borderRadius:10, border:`2px dashed ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:C.muted, fontSize:28, flexDirection:"column", gap:2 }}>
+                        <span>+</span>
+                        <span style={{ fontSize:9 }}>Photo</span>
+                        <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display:"none" }}/>
+                      </label>
+                    </div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:8 }}>+8 XP for adding a photo</div>
+                  </Card>
+                )}
+
                 {form.strain && (
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:12 }}>
                     <input placeholder="Brand (optional)" value={form.brand} onChange={e=>setForm(f=>({...f,brand:e.target.value}))}
@@ -936,58 +1213,40 @@ export default function App() {
                       style={{ padding:"10px 12px", background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, fontSize:12 }}/>
                   </div>
                 )}
-
-                {/* Strain photos */}
-                {form.strain && (
-                  <Card style={{ marginTop:12 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                      <div style={{ fontSize:12, fontWeight:600, color:C.text }}>📸 Strain Photos</div>
-                      <button onClick={()=>setShowPhotoTips(true)} style={{ fontSize:11, color:C.accent, background:"transparent", border:"none", cursor:"pointer" }}>Photo tips →</button>
-                    </div>
-                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                      {form.photos.map((p,i)=>(
-                        <div key={i} style={{ position:"relative" }}>
-                          <img src={p} style={{ width:64, height:64, borderRadius:8, objectFit:"cover" }} alt="bud"/>
-                          <button onClick={()=>setForm(f=>({...f,photos:f.photos.filter((_,j)=>j!==i)}))}
-                            style={{ position:"absolute", top:-4, right:-4, width:18, height:18, borderRadius:"50%",
-                              background:"#ef4444", border:"none", color:"white", cursor:"pointer", fontSize:11, lineHeight:"18px", textAlign:"center" }}>✕</button>
-                        </div>
-                      ))}
-                      <label style={{ width:64, height:64, borderRadius:8, border:`2px dashed ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:C.muted, fontSize:24 }}>
-                        +<input type="file" accept="image/*" onChange={handlePhoto} style={{ display:"none" }}/>
-                      </label>
-                    </div>
-                  </Card>
-                )}
               </div>
             )}
 
             {/* STEP 1: METHOD */}
             {step===1 && (
               <div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:20 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:16 }}>
                   {METHODS.map(m=>(
-                    <button key={m.id} onClick={()=>setForm(f=>({...f,method:m.id,amount:m.def}))}
-                      style={{ padding:"14px 8px", borderRadius:14,
-                        border:`2px solid ${form.method===m.id?C.accent:C.border}`,
-                        background:form.method===m.id?C.accentDim:C.card,
-                        color:form.method===m.id?C.accent:C.muted,
+                    <button key={m.id} onClick={()=>{ Sound.play("select"); setForm(f=>({...f,method:m.id,amount:m.def})); }}
+                      style={{ padding:"14px 8px", borderRadius:14, border:`2px solid ${form.method===m.id?C.accent:C.border}`,
+                        background:form.method===m.id?C.accentDim:C.card, color:form.method===m.id?C.accent:C.muted,
                         cursor:"pointer", textAlign:"center", transition:"all 0.15s" }}>
                       <div style={{ fontSize:24, marginBottom:4 }}>{m.emoji}</div>
                       <div style={{ fontSize:11, fontWeight:form.method===m.id?700:400 }}>{m.label}</div>
                     </button>
                   ))}
                 </div>
-                <Card>
+                <Card style={{ marginBottom:12 }}>
                   <Slider label={curMethod.unit==="puffs"?"Puffs":curMethod.unit==="ml"?"Amount (ml)":curMethod.unit==="mg"?"Dose (mg THC)":"Amount (g)"}
                     icon={curMethod.emoji} value={form.amount} onChange={v=>setForm(f=>({...f,amount:v}))}
                     min={curMethod.min} max={curMethod.max} step={curMethod.step}/>
-                  <div style={{ textAlign:"center", fontSize:28, fontWeight:800, color:C.accent, marginTop:4 }}>
-                    {form.amount} {curMethod.unit}
-                  </div>
+                  <div style={{ textAlign:"center", fontSize:28, fontWeight:800, color:C.accent }}>{form.amount} {curMethod.unit}</div>
+                </Card>
+                {/* Method-specific tip */}
+                <Card style={{ background:`linear-gradient(135deg,${C.card},#0d2a10)`, border:`1px solid ${C.accent}22` }}>
+                  <div style={{ fontSize:11, color:C.accent, marginBottom:8 }}>💡 {curMethod.label} Tips</div>
+                  {curMethod.tips.map((tip,i)=>(
+                    <div key={i} style={{ fontSize:12, color:C.muted, marginBottom:4, paddingLeft:8, borderLeft:`2px solid ${C.accent}44` }}>
+                      {tip}
+                    </div>
+                  ))}
                 </Card>
                 <Card style={{ marginTop:12 }}>
-                  <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>Date & time</div>
+                  <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>DATE & TIME</div>
                   <input type="datetime-local" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}
                     style={{ width:"100%", padding:"10px 12px", background:"#0a1a0b", border:`1px solid ${C.border}`, borderRadius:10, color:C.text, fontSize:12, boxSizing:"border-box" }}/>
                 </Card>
@@ -997,17 +1256,15 @@ export default function App() {
             {/* STEP 2: MOOD */}
             {step===2 && (
               <div>
-                {[["How are you feeling RIGHT NOW?","moodBefore"],["How do you expect to feel after?","moodAfter"]].map(([lbl,key])=>(
+                {[["How are you feeling RIGHT NOW?","moodBefore"],["How do you expect to feel?","moodAfter"]].map(([lbl,key])=>(
                   <div key={key} style={{ marginBottom:24 }}>
                     <div style={{ fontSize:14, fontWeight:600, color:C.text, marginBottom:12 }}>{lbl}</div>
                     <div style={{ display:"flex", gap:6 }}>
                       {MOODS.map((m,i)=>(
-                        <button key={i} onClick={()=>setForm(f=>({...f,[key]:i}))} style={{
+                        <button key={i} onClick={()=>{ Sound.play("tap"); setForm(f=>({...f,[key]:i})); }} style={{
                           flex:1, padding:"10px 4px", borderRadius:12,
                           border:`2px solid ${form[key]===i?C.amber:C.border}`,
-                          background:form[key]===i?"#2a1f00":C.card,
-                          cursor:"pointer", textAlign:"center", transition:"all 0.15s",
-                        }}>
+                          background:form[key]===i?"#2a1f00":C.card, cursor:"pointer", textAlign:"center" }}>
                           <div style={{ fontSize:24, marginBottom:2 }}>{m}</div>
                           <div style={{ fontSize:9, color:form[key]===i?C.amber:C.muted }}>{MOOD_LABELS[i]}</div>
                         </button>
@@ -1015,38 +1272,41 @@ export default function App() {
                     </div>
                   </div>
                 ))}
-                <div>
-                  <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>Notes (optional)</div>
-                  <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}
-                    placeholder="Setting, context, what you're doing..."
-                    rows={3} style={{ width:"100%", padding:"12px", background:C.card, border:`1px solid ${C.border}`,
-                      borderRadius:12, color:C.text, fontSize:13, resize:"none", boxSizing:"border-box" }}/>
-                </div>
+                <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}
+                  placeholder="Setting, context, what you're doing... (+3 XP for detailed notes)"
+                  rows={3} style={{ width:"100%", padding:"12px", background:C.card, border:`1px solid ${C.border}`,
+                    borderRadius:12, color:C.text, fontSize:13, resize:"none", boxSizing:"border-box" }}/>
               </div>
             )}
 
             {/* STEP 3: RATINGS */}
             {step===3 && (
               <div>
-                <Card style={{ marginBottom:14 }}>
+                <Card style={{ marginBottom:12 }}>
                   {RATINGS.map(r=><Slider key={r.id} label={r.label} icon={r.icon} value={form.ratings[r.id]} onChange={v=>setRating(r.id,v)} color={r.color}/>)}
-                  <Slider label="Intensity" icon="🌡️" value={form.intensity} onChange={v=>setForm(f=>({...f,intensity:v}))} color="#a78bfa"/>
+                  <Slider label="Intensity" icon="🌡️" value={form.intensity} onChange={v=>setForm(f=>({...f,intensity:v}))} color={C.purple}/>
                 </Card>
-
-                {/* Effects — collapsible optional */}
-                <button onClick={()=>setOptionalOpen(o=>({...o,effects:!o.effects}))}
+                {/* Optional effects */}
+                <button onClick={()=>{ Sound.play("tap"); setOptionalOpen(o=>({...o,effects:!o.effects})); }}
                   style={{ width:"100%", padding:"12px 16px", borderRadius:12, border:`1px solid ${C.border}`,
                     background:C.card, color:C.text, cursor:"pointer", textAlign:"left", display:"flex",
-                    justifyContent:"space-between", alignItems:"center", marginBottom:optionalOpen.effects?0:10, fontSize:14 }}>
-                  <span>🏷️ Effects & Flavours <span style={{ fontSize:11, color:C.muted }}>(optional)</span></span>
+                    justifyContent:"space-between", marginBottom:optionalOpen.effects?0:0, fontSize:14 }}>
+                  <span>🏷️ Effects & Flavours <span style={{ fontSize:11, color:C.muted }}>(optional +5 XP)</span></span>
                   <span style={{ color:C.muted }}>{optionalOpen.effects?"▾":"▸"}</span>
                 </button>
-
                 {optionalOpen.effects && (
-                  <Card style={{ marginBottom:10, borderTopLeftRadius:0, borderTopRightRadius:0 }}>
+                  <Card style={{ marginTop:8 }}>
                     <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>EFFECTS FELT</div>
                     <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:16 }}>
-                      {EFFECTS.map(e=><Tag key={e} label={e} active={form.effects.includes(e)} onClick={()=>toggle("effects",e)}/>)}
+                      {EFFECTS.map(e=>(
+                        <button key={e} onClick={()=>toggle("effects",e)} style={{
+                          padding:"6px 12px", borderRadius:20, fontSize:12, cursor:"pointer",
+                          border:`1.5px solid ${form.effects.includes(e)?C.accent:C.border}`,
+                          background:form.effects.includes(e)?C.accentDim:C.card,
+                          color:form.effects.includes(e)?C.accent:C.muted, fontWeight:form.effects.includes(e)?600:400 }}>
+                          {e}
+                        </button>
+                      ))}
                     </div>
                     <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>FLAVOURS</div>
                     {FLAVOR_FAMILIES.map(fam=>(
@@ -1070,58 +1330,50 @@ export default function App() {
               </div>
             )}
 
-            {/* STEP 4: WELLBEING (optional) */}
+            {/* STEP 4: WELLBEING */}
             {step===4 && (
               <div>
-                <div style={{ background:`linear-gradient(135deg,${C.card},#0a1f0a)`, border:`1px solid ${C.border}`, borderRadius:16, padding:14, marginBottom:10 }}>
+                <Card style={{ background:`linear-gradient(135deg,${C.card},#0a1f0a)`, border:`1px solid ${C.border}`, marginBottom:10 }}>
                   <div style={{ fontSize:13, color:C.muted, lineHeight:1.6, marginBottom:14 }}>
-                    This step is completely optional. Track how cannabis affected your physical and mental wellbeing. Slide right = improved, left = worsened.
+                    Optional — track how cannabis affected you. +5 XP for completing this step.
                   </div>
-
                   <div style={{ fontSize:13, fontWeight:600, color:"#6ee7b7", marginBottom:12 }}>🩹 Physical</div>
                   {PHYSICAL_CORE.map(f=><BidirSlider key={f.id} {...f} value={form.physical[f.id]||0} onChange={v=>setForm(fv=>({...fv,physical:{...fv.physical,[f.id]:v}}))} color="#6ee7b7"/>)}
-
                   <button onClick={()=>setOptionalOpen(o=>({...o,physMed:!o.physMed}))}
                     style={{ margin:"8px 0", padding:"6px 12px", borderRadius:8, border:`1px dashed ${C.border}`,
                       background:"transparent", color:C.muted, cursor:"pointer", fontSize:11, display:"flex", alignItems:"center", gap:6 }}>
                     {optionalOpen.physMed?"▾ Hide":"▸ Show"} medical conditions
                   </button>
                   {optionalOpen.physMed && PHYSICAL_MEDICAL.map(f=><BidirSlider key={f.id} {...f} value={form.physical[f.id]||0} onChange={v=>setForm(fv=>({...fv,physical:{...fv.physical,[f.id]:v}}))} color="#6ee7b7"/>)}
-
                   <textarea value={form.physicalNotes} onChange={e=>setForm(f=>({...f,physicalNotes:e.target.value}))}
-                    placeholder="Describe physical effects..."
-                    rows={2} style={{ width:"100%", marginTop:8, padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`,
-                      borderRadius:10, color:C.text, fontSize:12, resize:"none", boxSizing:"border-box" }}/>
-
+                    placeholder="Physical effects..." rows={2}
+                    style={{ width:"100%", marginTop:8, padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`, borderRadius:10, color:C.text, fontSize:12, resize:"none", boxSizing:"border-box" }}/>
                   <div style={{ fontSize:13, fontWeight:600, color:"#67e8f9", marginTop:16, marginBottom:12 }}>🧠 Mental</div>
                   {MENTAL_CORE.map(f=><BidirSlider key={f.id} {...f} value={form.mental[f.id]||0} onChange={v=>setForm(fv=>({...fv,mental:{...fv.mental,[f.id]:v}}))} color="#67e8f9"/>)}
-
                   <button onClick={()=>setOptionalOpen(o=>({...o,mentMed:!o.mentMed}))}
                     style={{ margin:"8px 0", padding:"6px 12px", borderRadius:8, border:`1px dashed ${C.border}`,
                       background:"transparent", color:C.muted, cursor:"pointer", fontSize:11, display:"flex", alignItems:"center", gap:6 }}>
                     {optionalOpen.mentMed?"▾ Hide":"▸ Show"} mental health conditions
                   </button>
                   {optionalOpen.mentMed && MENTAL_MEDICAL.map(f=><BidirSlider key={f.id} {...f} value={form.mental[f.id]||0} onChange={v=>setForm(fv=>({...fv,mental:{...fv.mental,[f.id]:v}}))} color="#67e8f9"/>)}
-
                   <textarea value={form.mentalNotes} onChange={e=>setForm(f=>({...f,mentalNotes:e.target.value}))}
-                    placeholder="Describe mental effects..."
-                    rows={2} style={{ width:"100%", marginTop:8, padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`,
-                      borderRadius:10, color:C.text, fontSize:12, resize:"none", boxSizing:"border-box" }}/>
-                </div>
+                    placeholder="Mental effects..." rows={2}
+                    style={{ width:"100%", marginTop:8, padding:"10px", background:"#090f14", border:`1px solid ${C.border}`, borderRadius:10, color:C.text, fontSize:12, resize:"none", boxSizing:"border-box" }}/>
+                </Card>
               </div>
             )}
 
-            {/* WIZARD NAV */}
+            {/* Wizard nav */}
             <div style={{ display:"flex", gap:10, marginTop:20 }}>
               {step>0 && (
-                <button onClick={()=>setStep(s=>s-1)} style={{
+                <button onClick={()=>{ Sound.play("swipe"); setStep(s=>s-1); }} style={{
                   flex:1, padding:"14px", borderRadius:14, border:`1.5px solid ${C.border}`,
                   background:"transparent", color:C.muted, cursor:"pointer", fontSize:14, fontWeight:600 }}>
                   ← Back
                 </button>
               )}
               {step<4 ? (
-                <button onClick={()=>setStep(s=>s+1)} disabled={step===0&&!form.strain}
+                <button onClick={()=>{ Sound.play("swipe"); setStep(s=>s+1); }} disabled={step===0&&!form.strain}
                   style={{ flex:2, padding:"14px", borderRadius:14, border:"none",
                     cursor:step===0&&!form.strain?"not-allowed":"pointer",
                     background:step===0&&!form.strain?C.faint:`linear-gradient(135deg,#2a6a0a,${C.accent})`,
@@ -1139,9 +1391,9 @@ export default function App() {
               )}
             </div>
             {step===4 && (
-              <button onClick={saveSession} style={{ width:"100%", marginTop:10, padding:"12px", borderRadius:12, border:`1px dashed ${C.border}`,
-                background:"transparent", color:C.muted, cursor:"pointer", fontSize:13 }}>
-                Skip wellbeing & save
+              <button onClick={saveSession} style={{ width:"100%", marginTop:10, padding:"12px", borderRadius:12,
+                border:`1px dashed ${C.border}`, background:"transparent", color:C.muted, cursor:"pointer", fontSize:13 }}>
+                Skip & save
               </button>
             )}
           </div>
@@ -1150,13 +1402,11 @@ export default function App() {
         {/* ════ HISTORY ════ */}
         {tab==="sessions" && (
           <div>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontSize:12, color:C.muted }}>{sessions.length} session{sessions.length!==1?"s":""}</div>
-            </div>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:14 }}>{sessions.length} session{sessions.length!==1?"s":""}</div>
             {sessions.length===0 && (
               <div style={{ textAlign:"center", padding:"50px 20px", color:C.muted }}>
                 <div style={{ fontSize:40, marginBottom:12 }}>📋</div>
-                <div>No sessions yet — log your first one!</div>
+                <div>No sessions yet</div>
               </div>
             )}
             {sessions.map(s=>{
@@ -1164,7 +1414,7 @@ export default function App() {
               const meth = METHODS.find(m=>m.id===s.method);
               const open = expandedId===s.id;
               return (
-                <div key={s.id} onClick={()=>setExpandedId(open?null:s.id)}
+                <div key={s.id} onClick={()=>{ Sound.play("tap"); setExpandedId(open?null:s.id); }}
                   style={{ background:C.card, border:`1.5px solid ${open?C.accent+"44":C.border}`,
                     borderRadius:16, marginBottom:8, overflow:"hidden", cursor:"pointer" }}>
                   <div style={{ padding:"12px 14px", display:"flex", gap:10, alignItems:"center" }}>
@@ -1187,7 +1437,6 @@ export default function App() {
                   </div>
                   {open && (
                     <div style={{ padding:"0 14px 14px", borderTop:`1px solid ${C.border}` }}>
-                      {/* Photos */}
                       {s.photos?.length>0 && (
                         <div style={{ display:"flex", gap:8, marginTop:12, marginBottom:12, overflowX:"auto" }}>
                           {s.photos.map((p,i)=><img key={i} src={p} style={{ width:80, height:80, borderRadius:10, objectFit:"cover", flexShrink:0 }} alt="bud"/>)}
@@ -1205,26 +1454,17 @@ export default function App() {
                       <div style={{ display:"flex", gap:5, marginBottom:8, flexWrap:"wrap" }}>
                         {s.effects?.map(e=><span key={e} style={{ fontSize:11, padding:"3px 10px", background:C.accentDim, borderRadius:10, color:C.accent }}>{e}</span>)}
                       </div>
-                      {s.flavors?.length>0 && (
-                        <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:8 }}>
-                          {s.flavors.map(f=>{
-                            const fam=FLAVOR_FAMILIES.find(fm=>fm.flavors.includes(f));
-                            return <span key={f} style={{ fontSize:10, padding:"2px 8px", background:fam?.color+"22"||C.card, borderRadius:10, color:fam?.color||C.muted }}>{f}</span>;
-                          })}
-                        </div>
-                      )}
-                      {(s.physicalNotes||s.mentalNotes) && (
-                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
-                          {s.physicalNotes&&<div style={{ background:"#0a150b", borderRadius:10, padding:10 }}><div style={{ fontSize:9, color:"#6ee7b7", marginBottom:3 }}>PHYSICAL</div><div style={{ fontSize:11, color:"#4a7a6a" }}>{s.physicalNotes}</div></div>}
-                          {s.mentalNotes&&<div style={{ background:"#090f14", borderRadius:10, padding:10 }}><div style={{ fontSize:9, color:"#67e8f9", marginBottom:3 }}>MENTAL</div><div style={{ fontSize:11, color:"#4a7a8a" }}>{s.mentalNotes}</div></div>}
-                        </div>
-                      )}
                       {s.notes&&<div style={{ fontSize:12, color:"#4a7a5a", fontStyle:"italic", marginBottom:10 }}>"{s.notes}"</div>}
                       <div style={{ display:"flex", gap:8 }}>
-                        <button onClick={e=>{ e.stopPropagation(); setEditingSession(s); }} style={{
+                        <button onClick={e=>{ e.stopPropagation(); Sound.play("tap"); setEditingSession(s); }} style={{
                           padding:"7px 14px", borderRadius:8, border:`1px solid ${C.accent}44`,
                           background:"transparent", color:C.accent, cursor:"pointer", fontSize:12 }}>
                           ✏️ Edit
+                        </button>
+                        <button onClick={e=>{ e.stopPropagation(); setPassportStrain(s.strain); }} style={{
+                          padding:"7px 14px", borderRadius:8, border:`1px solid ${C.border}`,
+                          background:"transparent", color:C.muted, cursor:"pointer", fontSize:12 }}>
+                          🛂 Passport
                         </button>
                         <button onClick={e=>{ e.stopPropagation(); setSessions(p=>p.filter(x=>x.id!==s.id)); setExpandedId(null); }}
                           style={{ padding:"7px 14px", borderRadius:8, border:"1px solid #3a1a1a", background:"transparent", color:"#5a2a2a", cursor:"pointer", fontSize:12 }}>
@@ -1239,172 +1479,22 @@ export default function App() {
           </div>
         )}
 
-        {/* ════ INSIGHTS ════ */}
-        {tab==="insights" && (
+        {/* ════ PASSPORT ════ */}
+        {tab==="passport" && (
           <div>
-            {sessions.length<2 ? (
-              <div style={{ textAlign:"center", padding:"50px 20px" }}>
-                <div style={{ fontSize:40, marginBottom:12 }}>📊</div>
-                <div style={{ fontSize:14, color:C.muted, marginBottom:8 }}>Log at least 2 sessions to see insights</div>
-                <button onClick={()=>setTab("log")} style={{ padding:"10px 24px", borderRadius:20, border:"none", cursor:"pointer",
-                  background:C.accentDim, color:C.accent, fontSize:13, fontWeight:600 }}>Start logging →</button>
+            <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>🛂 Strain Passport</div>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>Your personal strain collection — {strainNames.length} tried</div>
+            {strainNames.length===0 ? (
+              <div style={{ textAlign:"center", padding:"50px 20px", color:C.muted }}>
+                <div style={{ fontSize:40, marginBottom:12 }}>🛂</div>
+                <div>Log sessions to build your passport</div>
               </div>
             ) : (
-              <>
-                {/* Stats */}
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:8, marginBottom:16 }}>
-                  {[
-                    {v:sessions.length, l:"Sessions",    c:C.accent,  i:"📋"},
-                    {v:avgRating,       l:"Avg Rating",  c:C.amber,   i:"⭐"},
-                    {v:+(sessions.reduce((a,s)=>a+(s.moodAfter-s.moodBefore),0)/sessions.length).toFixed(1), l:"Mood Impact", c:"#6ee7b7", i:"🧠", prefix:true},
-                    {v:strainNames.length, l:"Strains",  c:"#a78bfa", i:"🌱"},
-                  ].map(x=>(
-                    <Card key={x.l} style={{ textAlign:"center", padding:14 }}>
-                      <div style={{ fontSize:20, marginBottom:4 }}>{x.i}</div>
-                      <div style={{ fontSize:24, fontWeight:800, color:x.c }}>
-                        {x.prefix ? (+x.v >= 0 ? `+${x.v}` : x.v) : x.v}
-                      </div>
-                      <div style={{ fontSize:10, color:C.muted }}>{x.l}</div>
-                    </Card>
-                  ))}
+              strainNames.map(name=>(
+                <div key={name} onClick={()=>{ Sound.play("select"); setPassportStrain(name); loadAnecdotes(name); }}>
+                  <PassportCard strain={name} sessions={sessions} allStrains={allStrains}/>
                 </div>
-
-                {/* Strain Intelligence — prominent nudge if not enough data */}
-                {qualifiedStrains.length===0 && sessions.length>0 && (
-                  <div style={{ background:`linear-gradient(135deg,#0d2a10,#0a1f0a)`, border:`2px solid ${C.accent}44`,
-                    borderRadius:18, padding:18, marginBottom:16, textAlign:"center" }}>
-                    <div style={{ fontSize:36, marginBottom:8 }}>🧠</div>
-                    <div style={{ fontSize:16, fontWeight:700, color:C.accent, marginBottom:6 }}>Strain Intelligence locked</div>
-                    <div style={{ fontSize:13, color:C.muted, marginBottom:14, lineHeight:1.5 }}>
-                      You need at least <strong style={{ color:C.text }}>2 sessions with the same strain</strong> to unlock your personal effect breakdown.
-                    </div>
-                    <div style={{ height:8, background:C.faint, borderRadius:4, marginBottom:8, overflow:"hidden" }}>
-                      <div style={{ height:"100%", borderRadius:4, background:C.accent,
-                        width:`${Math.min(100,sessions.filter(s=>s.strain===sessions[0]?.strain).length/2*100)}%` }}/>
-                    </div>
-                    <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>
-                      {sessions.filter(s=>s.strain===sessions[0]?.strain).length}/2 sessions with "{sessions[0]?.strain}"
-                    </div>
-                    <button onClick={()=>{ setForm(f=>({...f,strain:sessions[0]?.strain||""})); setStep(1); setTab("log"); }}
-                      style={{ padding:"10px 24px", borderRadius:20, border:"none", cursor:"pointer",
-                        background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07", fontSize:13, fontWeight:700 }}>
-                      Log another session →
-                    </button>
-                  </div>
-                )}
-
-                {/* Strain Intelligence cards */}
-                {qualifiedStrains.length>0 && (
-                  <div style={{ marginBottom:16 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:C.accent, marginBottom:4 }}>🧠 Strain Intelligence</div>
-                    <div style={{ fontSize:12, color:C.muted, marginBottom:12 }}>Based on your actual sessions — not what Leafly says.</div>
-                    {qualifiedStrains.map(name=>{
-                      const ss  = sessions.filter(s=>s.strain===name);
-                      const n   = ss.length;
-                      const st  = allStrains.find(x=>x.name===name);
-                      const avg = (ss.reduce((a,s)=>a+(s.ratings?.overall||0),0)/n).toFixed(1);
-                      const avgMood = (ss.reduce((a,s)=>a+(s.moodAfter-s.moodBefore),0)/n).toFixed(1);
-                      const freqs = EFFECTS.map(e=>({e,pct:Math.round(ss.filter(s=>s.effects?.includes(e)).length/n*100)}))
-                        .filter(x=>x.pct>0).sort((a,b)=>b.pct-a.pct).slice(0,6);
-                      const consistent = freqs.filter(x=>x.pct>=50);
-                      const allF = [...PHYSICAL_FACTORS,...MENTAL_FACTORS];
-                      const wellImpact = allF.map(f=>{
-                        const key=PHYSICAL_FACTORS.find(x=>x.id===f.id)?"physical":"mental";
-                        const vals=ss.filter(s=>s[key]?.[f.id]).map(s=>s[key][f.id]);
-                        if(!vals.length) return null;
-                        return {...f,avg:+(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1)};
-                      }).filter(x=>x&&x.avg!==0).sort((a,b)=>Math.abs(b.avg)-Math.abs(a.avg)).slice(0,4);
-                      return (
-                        <Card key={name} style={{ border:`1.5px solid ${st?typeColor(st.type)+"33":C.border}`, marginBottom:12,
-                          boxShadow:st?`0 0 20px ${typeColor(st.type)}10`:undefined }}>
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
-                            <div>
-                              <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:4 }}>
-                                <span style={{ fontWeight:800, fontSize:16, color:C.text }}>{name}</span>
-                                {st&&<span style={{ fontSize:10, padding:"2px 8px", background:typeBg(st.type), border:`1px solid ${typeColor(st.type)}44`, borderRadius:10, color:typeColor(st.type) }}>{st.type}</span>}
-                                <span style={{ fontSize:11, color:C.muted }}>{n} sessions</span>
-                              </div>
-                              <div style={{ fontSize:12, color:"#4a8a5a", fontStyle:"italic" }}>
-                                {freqs[0]?`${freqs[0].pct}% of sessions: ${freqs[0].e.toLowerCase()}. Mood ${+avgMood>=0?"improves":"drops"}.`:"Keep logging for deeper insights."}
-                              </div>
-                            </div>
-                            <div style={{ background:C.accentDim, borderRadius:12, padding:"8px 12px", textAlign:"center", flexShrink:0 }}>
-                              <div style={{ fontSize:24, fontWeight:800, color:C.accent, lineHeight:1 }}>{avg}</div>
-                              <div style={{ fontSize:9, color:C.muted }}>avg</div>
-                            </div>
-                          </div>
-                          {freqs.map(({e,pct})=>(
-                            <div key={e} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-                              <span style={{ fontSize:12, color:pct>=50?C.accent:C.muted, minWidth:72, fontWeight:pct>=50?600:400 }}>{e}</span>
-                              <div style={{ flex:1, height:6, background:C.faint, borderRadius:3 }}>
-                                <div style={{ height:"100%", borderRadius:3, width:`${pct}%`,
-                                  background:pct>=75?`linear-gradient(90deg,#2a6a0a,${C.accent})`:pct>=50?`linear-gradient(90deg,#1a4a1a,#6a9a2a)`:"#2a4a2a" }}/>
-                              </div>
-                              <span style={{ fontSize:11, fontWeight:700, color:pct>=50?C.accent:C.muted, minWidth:34, textAlign:"right" }}>{pct}%</span>
-                            </div>
-                          ))}
-                          {consistent.length>0 && (
-                            <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginTop:8, marginBottom:8 }}>
-                              <span style={{ fontSize:10, color:C.muted, alignSelf:"center" }}>Consistent:</span>
-                              {consistent.map(x=><span key={x.e} style={{ fontSize:11, padding:"3px 10px", background:C.accentDim, border:`1px solid ${C.accent}44`, borderRadius:10, color:C.accent, fontWeight:600 }}>{x.e} {x.pct}%</span>)}
-                            </div>
-                          )}
-                          {wellImpact.length>0 && (
-                            <div style={{ paddingTop:10, borderTop:`1px solid ${C.border}`, marginTop:8 }}>
-                              <div style={{ fontSize:10, color:C.muted, marginBottom:6 }}>Wellbeing impact</div>
-                              <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-                                {wellImpact.map(f=>(
-                                  <span key={f.id} style={{ fontSize:11, padding:"3px 9px",
-                                    background:f.avg>0?"#022c22":"#1a0808",
-                                    border:`1px solid ${f.avg>0?"#6ee7b733":"#f8717133"}`,
-                                    borderRadius:10, color:f.avg>0?"#6ee7b7":"#f87171" }}>
-                                    {f.icon} {f.label} {f.avg>0?`+${f.avg}`:f.avg}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <button onClick={()=>{ setForm(f=>({...f,strain:name})); setStep(1); setTab("log"); }}
-                            style={{ marginTop:12, padding:"7px 14px", borderRadius:10, border:`1px solid ${C.border}`,
-                              background:"transparent", color:C.muted, cursor:"pointer", fontSize:11 }}>
-                            + Log another session →
-                          </button>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Charts */}
-                {trend.length>1 && (
-                  <Card style={{ marginBottom:10 }}>
-                    <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:12 }}>RATING TREND</div>
-                    <ResponsiveContainer width="100%" height={120}>
-                      <LineChart data={trend}>
-                        <XAxis dataKey="label" tick={{fill:C.muted,fontSize:9}} axisLine={false} tickLine={false}/>
-                        <YAxis domain={[0,10]} tick={{fill:C.muted,fontSize:9}} axisLine={false} tickLine={false}/>
-                        <Tooltip {...TT}/>
-                        <Line type="monotone" dataKey="r" stroke={C.accent} strokeWidth={2.5} dot={{fill:C.accent,r:4,strokeWidth:0}}/>
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </Card>
-                )}
-                {effectCounts.length>0 && (
-                  <Card>
-                    <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:12 }}>YOUR TOP EFFECTS</div>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <BarChart data={effectCounts} layout="vertical">
-                        <XAxis type="number" tick={{fill:C.muted,fontSize:9}} axisLine={false} tickLine={false}/>
-                        <YAxis type="category" dataKey="e" tick={{fill:"#6a9a6a",fontSize:11}} axisLine={false} tickLine={false} width={65}/>
-                        <Tooltip {...TT}/>
-                        <Bar dataKey="n" radius={[0,6,6,0]}>
-                          {effectCounts.map((_,i)=><Cell key={i} fill={`hsl(${100+i*15},55%,${40+i*4}%)`}/>)}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </Card>
-                )}
-              </>
+              ))
             )}
           </div>
         )}
@@ -1414,97 +1504,179 @@ export default function App() {
           <div>
             <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:16 }}>Settings & Data</div>
 
-            {/* Profile */}
-            {profile && (
-              <Card style={{ marginBottom:14 }}>
-                <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>YOUR PROFILE</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:12 }}>
-                  {[profile.experience,profile.frequency,profile.goal,profile.method].filter(Boolean).map(v=>(
-                    <span key={v} style={{ fontSize:12, padding:"4px 10px", background:C.accentDim, borderRadius:10, color:C.accent }}>{v}</span>
-                  ))}
+            {/* Rank card */}
+            <Card style={{ marginBottom:14, background:`linear-gradient(135deg,${C.card},#0d2a10)`, border:`1px solid ${rank.color}33` }}>
+              <div style={{ display:"flex", gap:12, alignItems:"center", marginBottom:12 }}>
+                <div style={{ fontSize:36 }}>{rank.icon}</div>
+                <div>
+                  <div style={{ fontSize:16, fontWeight:800, color:rank.color }}>{rank.title}</div>
+                  <div style={{ fontSize:12, color:C.muted }}>{xp} XP total</div>
                 </div>
-                {profile.pastStrains && <div style={{ fontSize:12, color:C.muted }}>Past strains: {profile.pastStrains}</div>}
-                <button onClick={()=>{ localStorage.removeItem("tj6_p"); setProfile(null); }}
-                  style={{ marginTop:10, padding:"7px 14px", borderRadius:8, border:`1px solid ${C.border}`,
-                    background:"transparent", color:C.muted, cursor:"pointer", fontSize:12 }}>
-                  Redo onboarding quiz
-                </button>
-              </Card>
-            )}
+              </div>
+              <XPBar xp={xp}/>
+            </Card>
 
-            {/* Data export */}
+            {/* Milestones */}
+            <Card style={{ marginBottom:14 }}>
+              <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:10 }}>🏆 Achievements ({earnedMilestones.length}/{MILESTONES.length})</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                {MILESTONES.map(m=>{
+                  const earned = unlockedMilestones.includes(m.id);
+                  return (
+                    <div key={m.id} style={{ background:earned?"#0a1f0a":"#0a0f0a", border:`1px solid ${earned?C.accent+"33":C.border}`,
+                      borderRadius:10, padding:"10px 12px", opacity:earned?1:0.5 }}>
+                      <div style={{ fontSize:20, marginBottom:4 }}>{m.icon}</div>
+                      <div style={{ fontSize:12, fontWeight:600, color:earned?C.accent:C.muted }}>{m.title}</div>
+                      <div style={{ fontSize:10, color:C.muted }}>{m.desc}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+
+            {/* Export */}
             <Card style={{ marginBottom:14 }}>
               <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:4 }}>📤 Export & Backup</div>
-              <div style={{ fontSize:12, color:C.muted, marginBottom:14, lineHeight:1.5 }}>
-                Export your data to keep a backup or transfer to a new phone.
-              </div>
+              <div style={{ fontSize:12, color:C.muted, marginBottom:12 }}>Keep your data safe or move to a new phone.</div>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 <button onClick={exportJSON} style={{ padding:"12px 16px", borderRadius:12, border:`1px solid ${C.accent}44`,
                   background:C.accentDim, color:C.accent, cursor:"pointer", fontSize:13, fontWeight:600, textAlign:"left" }}>
                   💾 Full backup (JSON) — restore on new phone
                 </button>
-                <button onClick={exportData} style={{ padding:"12px 16px", borderRadius:12, border:`1px solid ${C.border}`,
+                <button onClick={exportCSV} style={{ padding:"12px 16px", borderRadius:12, border:`1px solid ${C.border}`,
                   background:"transparent", color:C.text, cursor:"pointer", fontSize:13, textAlign:"left" }}>
-                  📊 Export as CSV — open in Excel/Sheets
+                  📊 Export as CSV
                 </button>
-                <label style={{ padding:"12px 16px", borderRadius:12, border:`1px dashed ${C.border}`,
-                  background:"transparent", color:C.muted, cursor:"pointer", fontSize:13, display:"block" }}>
-                  📥 Restore from backup (JSON)
+                <label style={{ padding:"12px 16px", borderRadius:12, border:`1.5px dashed ${C.border}`,
+                  color:C.muted, cursor:"pointer", fontSize:13, display:"block" }}>
+                  📥 Restore from backup
                   <input type="file" accept=".json" onChange={importJSON} style={{ display:"none" }}/>
                 </label>
               </div>
             </Card>
 
-            {/* Stats summary */}
-            <Card style={{ marginBottom:14 }}>
-              <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:10 }}>📊 All-time stats</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                {[
-                  ["Sessions logged", sessions.length],
-                  ["Strains tried", strainNames.length],
-                  ["Avg rating", avgRating],
-                  ["Custom strains", custom.length],
-                ].map(([l,v])=>(
-                  <div key={l} style={{ background:"#0a150b", borderRadius:10, padding:"10px 12px" }}>
-                    <div style={{ fontSize:18, fontWeight:800, color:C.accent }}>{v}</div>
-                    <div style={{ fontSize:11, color:C.muted }}>{l}</div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+            {/* Profile */}
+            {profile && (
+              <Card style={{ marginBottom:14 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:10 }}>👤 Your Profile</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:12 }}>
+                  {[profile.experience,profile.frequency,profile.goal,profile.method].filter(Boolean).map(v=>(
+                    <span key={v} style={{ fontSize:12, padding:"4px 10px", background:C.accentDim, borderRadius:10, color:C.accent }}>{v}</span>
+                  ))}
+                </div>
+                <button onClick={()=>{ localStorage.removeItem("tj7_p"); setProfile(null); setQuizStep(0); setQuizAnswers({}); }}
+                  style={{ padding:"7px 14px", borderRadius:8, border:`1px solid ${C.border}`,
+                    background:"transparent", color:C.muted, cursor:"pointer", fontSize:12 }}>
+                  Redo setup quiz
+                </button>
+              </Card>
+            )}
 
-            {/* About */}
             <Card>
               <div style={{ display:"flex", gap:12, alignItems:"center", marginBottom:10 }}>
                 <LogoMark size={40}/>
                 <div>
                   <div style={{ fontSize:14, fontWeight:700, color:C.accent }}>Terp Journal</div>
-                  <div style={{ fontSize:11, color:C.muted }}>Cannabis Experience Log · v1.0</div>
+                  <div style={{ fontSize:11, color:C.muted }}>Cannabis Experience Log · v2.0</div>
                 </div>
               </div>
               <div style={{ fontSize:12, color:C.muted, lineHeight:1.6 }}>
-                Your data stays on your device. Nothing is sent to any server.
-                Export regularly to keep your data safe.
+                Your data stays on your device. Nothing sent to any server. Export regularly to keep it safe.
               </div>
             </Card>
           </div>
         )}
       </div>
 
+      {/* Edit modal */}
+      {editingSession && (
+        <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(8,15,9,0.95)", overflowY:"auto", padding:20 }}>
+          <div style={{ maxWidth:480, margin:"0 auto" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:20 }}>
+              <div style={{ fontSize:16, fontWeight:700, color:C.accent }}>Edit Session</div>
+              <button onClick={()=>setEditingSession(null)} style={{ background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer" }}>✕</button>
+            </div>
+            <Card style={{ marginBottom:12 }}>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>STRAIN</div>
+              <select value={editingSession.strain} onChange={e=>setEditingSession(s=>({...s,strain:e.target.value}))}
+                style={{ width:"100%", padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:13 }}>
+                {allStrains.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
+              </select>
+            </Card>
+            <Card style={{ marginBottom:12 }}>
+              <Slider label="Overall Rating" icon="⭐" value={editingSession.ratings?.overall||7}
+                onChange={v=>setEditingSession(s=>({...s,ratings:{...s.ratings,overall:v}}))} color="#f59e0b"/>
+            </Card>
+            <Card style={{ marginBottom:12 }}>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>EFFECTS</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {EFFECTS.map(e=>(
+                  <button key={e} onClick={()=>setEditingSession(s=>({...s,effects:s.effects?.includes(e)?s.effects.filter(x=>x!==e):[...(s.effects||[]),e]}))}
+                    style={{ padding:"6px 12px", borderRadius:20, fontSize:12, cursor:"pointer",
+                      border:`1.5px solid ${editingSession.effects?.includes(e)?C.accent:C.border}`,
+                      background:editingSession.effects?.includes(e)?C.accentDim:C.card,
+                      color:editingSession.effects?.includes(e)?C.accent:C.muted }}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </Card>
+            <Card style={{ marginBottom:12 }}>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>NOTES</div>
+              <textarea value={editingSession.notes||""} onChange={e=>setEditingSession(s=>({...s,notes:e.target.value}))}
+                rows={3} style={{ width:"100%", padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`,
+                  borderRadius:8, color:C.text, fontSize:13, resize:"none", boxSizing:"border-box" }}/>
+            </Card>
+            <button onClick={()=>saveEdit(editingSession)} style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
+              background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07", fontSize:14, fontWeight:700 }}>
+              Save Changes
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Photo tips */}
+      {showPhotoTips && (
+        <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(8,15,9,0.97)", padding:24, overflowY:"auto" }}>
+          <div style={{ maxWidth:440, margin:"0 auto" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:20 }}>
+              <div style={{ fontSize:16, fontWeight:700, color:C.accent }}>📸 Bud Photo Tips</div>
+              <button onClick={()=>setShowPhotoTips(false)} style={{ background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer" }}>✕</button>
+            </div>
+            {[
+              ["Natural light","Take near a window in daylight. Avoid flash — it kills trichome detail."],
+              ["Macro mode","Use portrait or macro on your phone. Get 5–10cm away."],
+              ["Dark background","Put the bud on black paper or a dark plate. Makes colours pop."],
+              ["Multiple angles","Top-down = structure. Side-on = density. Close-up = trichomes."],
+              ["Clean your lens","Wipe the lens before shooting. Pocket lint ruins macro shots."],
+              ["Use a timer","Set a 2-second timer to avoid shake on close shots."],
+            ].map(([t,d])=>(
+              <Card key={t} style={{ marginBottom:10 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:C.accent, marginBottom:4 }}>{t}</div>
+                <div style={{ fontSize:12, color:C.muted, lineHeight:1.5 }}>{d}</div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       <style>{`
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         input:focus,select:focus,textarea:focus{outline:2px solid #a3e63540!important;outline-offset:1px}
         .styled-slider{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;outline:none;background:linear-gradient(90deg,var(--col) var(--pct),#1e3020 var(--pct));cursor:pointer}
-        .styled-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--col);cursor:pointer;border:3px solid #080f09;box-shadow:0 0 8px var(--col,#a3e635)44}
-        .styled-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--col);cursor:pointer;border:3px solid #080f09}
+        .styled-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--col);cursor:pointer;border:3px solid #080f09;box-shadow:0 0 8px var(--col,#a3e635)55}
+        .styled-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--col);cursor:pointer;border:3px solid #080f09}
         ::-webkit-scrollbar{width:3px}
         ::-webkit-scrollbar-thumb{background:#1c2e1c;border-radius:2px}
         ::placeholder{color:#2a4a2a!important}
         button{font-family:system-ui,-apple-system,sans-serif}
         body{background:#080f09}
-        @media(max-width:360px){
-          .styled-slider::-webkit-slider-thumb{width:26px;height:26px}
-        }
+        @keyframes scrollUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+        @keyframes scrollDown{from{transform:translateY(-50%)}to{transform:translateY(0)}}
+        @keyframes slideDown{from{transform:translateX(-50%) translateY(-20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+        @media(max-width:360px){.styled-slider::-webkit-slider-thumb{width:28px;height:28px}}
       `}</style>
     </div>
   );
