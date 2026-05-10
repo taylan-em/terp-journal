@@ -625,6 +625,8 @@ export default function App() {
   const [sdrop, setSdrop] = useState(false);
   const [aiRes, setAiRes] = useState([]);
   const [aiLoad,setAiLoad]= useState(false);
+  const [aiError, setAiError] = useState(false);
+  const [anecdoteError, setAnecdoteError] = useState(false);
   const searchRef = useRef(null);
   const aiTimer   = useRef(null);
   const [expandedId, setExpandedId] = useState(null);
@@ -694,9 +696,9 @@ export default function App() {
   const tryAI = useCallback(async(q)=>{
     setAiLoad(true);
     try {
-      const r = await fetch("/api/claude",{
+      const r = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:600,
+        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:600,
           system:`Cannabis strain database. Return ONLY a raw JSON array, no markdown, no extra text. Up to 4 matching strains. Each object must have exactly: name(string), type("Indica"|"Sativa"|"Hybrid"), thc(number 10-32), cbd(number 0-20), effects(array of 3 strings), flavors(array of 3 strings), description(string max 8 words). Respond with ONLY the JSON array starting with [`,
           messages:[{role:"user",content:`Cannabis strains matching: ${q}`}] })
       });
@@ -705,7 +707,7 @@ export default function App() {
       const start = txt.indexOf("[");
       const end   = txt.lastIndexOf("]");
       if(start!==-1&&end!==-1) setAiRes(JSON.parse(txt.slice(start,end+1))||[]);
-    } catch { setAiRes([]); }
+    } catch { setAiRes([]); setAiError(true); }
     setAiLoad(false);
   },[]);
 
@@ -738,10 +740,11 @@ export default function App() {
   const loadAnecdotes = async (strainName) => {
     if (strainAnecdotes[strainName]) return;
     setLoadingAnecdotes(true);
+    setAnecdoteError(false);
     try {
-      const r = await fetch("/api/claude",{
+      const r = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:800,
+        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800,
           system:`You are a cannabis strain expert. Generate 3 authentic-sounding user anecdotes/reviews for the strain given. Return ONLY a raw JSON array of 3 objects, no markdown. Each object: { "user": "anonymous username like DesertFox42", "rating": number 1-5, "review": "2-3 sentence personal experience written in first person, conversational, specific about effects and context", "method": "how they consumed it" }. Make them feel real and varied — different experiences, methods, outcomes.`,
           messages:[{role:"user",content:`Generate reviews for: ${strainName}`}] })
       });
@@ -752,7 +755,7 @@ export default function App() {
         const parsed = JSON.parse(txt.slice(start,end+1));
         setStrainAnecdotes(prev=>({...prev,[strainName]:parsed}));
       }
-    } catch {}
+    } catch { setAnecdoteError(true); }
     setLoadingAnecdotes(false);
   };
 
@@ -764,10 +767,21 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  const checkStorageLimit = () => {
+    try {
+      const used = JSON.stringify(sessions).length;
+      if (used > 3500000) return true; // warn at 3.5MB
+    } catch { return false; }
+    return false;
+  };
+
   const saveSession = () => {
     Sound.play("save");
     setSessions(p=>[{...form,id:Date.now()},...p]);
     setSaved(true);
+    if (checkStorageLimit()) {
+      setTimeout(()=>{ alert("⚠️ You're using a lot of storage. Go to More → Export to back up your data before it fills up."); },2000);
+    }
     setTimeout(()=>{ setSaved(false); setForm(mkForm()); setStep(0); setTab("home"); },1800);
   };
 
@@ -920,7 +934,16 @@ export default function App() {
                 ))
               ) : (
                 <div style={{ fontSize:12, color:C.muted, textAlign:"center", padding:"12px 0" }}>
-                  {loadingAnecdotes?"Generating reviews...":"Tap 'Load reviews' to see community anecdotes"}
+                  {loadingAnecdotes ? (
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"12px 0", fontSize:12, color:C.muted }}>
+                        <span style={{ fontSize:18, animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</span> Generating reviews…
+                      </div>
+                    ) : anecdoteError ? (
+                      <div style={{ textAlign:"center", padding:"12px 0" }}>
+                        <div style={{ fontSize:12, color:"#f87171", marginBottom:8 }}>Failed to load reviews</div>
+                        <button onClick={()=>{ setAnecdoteError(false); loadAnecdotes(passportStrain); }} style={{ padding:"6px 14px", borderRadius:8, border:"1px solid #f8717144", background:"transparent", color:"#f87171", cursor:"pointer", fontSize:12 }}>Try again</button>
+                      </div>
+                    ) : "Tap 'Load reviews' to see community anecdotes"}
                 </div>
               )}
             </Card>
@@ -967,8 +990,11 @@ export default function App() {
               <div style={{ position:"relative", minHeight:"80vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
                 <StrainGallery/>
                 <div style={{ position:"relative", zIndex:1, textAlign:"center", padding:"0 20px" }}>
-                  <LogoMark size={72}/>
-                  <div style={{ fontSize:26, fontWeight:800, color:C.accent, marginTop:16, marginBottom:8 }}>Resin</div>
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:8 }}>
+                    <LogoMark size={80}/>
+                    <div style={{ fontSize:32, fontWeight:800, color:C.accent, marginTop:14, letterSpacing:"-0.5px" }}>Resin</div>
+                    <div style={{ width:40, height:2, background:C.accent, borderRadius:1, marginTop:6, opacity:0.4 }}/>
+                  </div>
                   <div style={{ fontSize:15, color:C.muted, lineHeight:1.6, marginBottom:8 }}>Track your cannabis. Discover what works.</div>
                   <div style={{ fontSize:13, color:rank.color, marginBottom:28 }}>{rank.icon} You start as a {rank.title}</div>
                   <button onClick={()=>{ Sound.play("select"); setTab("log"); }} style={{
@@ -1132,7 +1158,20 @@ export default function App() {
                     <div style={{ position:"absolute", top:"calc(100% + 6px)", left:0, right:0, zIndex:200,
                       background:"#0d1a0e", border:`1px solid #2a4a2a`, borderRadius:14,
                       boxShadow:"0 12px 40px rgba(0,0,0,0.7)", overflow:"hidden", maxHeight:300, overflowY:"auto" }}>
-                      {dropList.length===0&&!aiLoad&&<div style={{ padding:16, fontSize:12, color:C.muted, textAlign:"center" }}>No matches</div>}
+                      {aiLoad && dropList.length===0 && (
+                        <div style={{ padding:16, fontSize:12, color:C.muted, textAlign:"center", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                          <span style={{ fontSize:18, animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</span> Searching AI database…
+                        </div>
+                      )}
+                      {!aiLoad && dropList.length===0 && !aiError && sq.length>=2 && (
+                        <div style={{ padding:16, fontSize:12, color:C.muted, textAlign:"center" }}>No matches found</div>
+                      )}
+                      {aiError && (
+                        <div style={{ padding:14, textAlign:"center" }}>
+                          <div style={{ fontSize:12, color:"#f87171", marginBottom:8 }}>Search failed — check your connection</div>
+                          <button onClick={()=>tryAI(sq)} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid #f8717144`, background:"transparent", color:"#f87171", cursor:"pointer", fontSize:12 }}>Try again</button>
+                        </div>
+                      )}
                       {dropList.map((r,i)=>(
                         <button key={r.name+i} onClick={()=>pickStrain(r)} style={{
                           width:"100%", padding:"12px 14px", background:"transparent", border:"none",
@@ -1148,7 +1187,7 @@ export default function App() {
                           <div style={{ fontSize:11, color:C.muted }}>{r.description}</div>
                         </button>
                       ))}
-                      {aiLoad&&<div style={{ padding:12, fontSize:11, color:C.muted, textAlign:"center", borderTop:`1px solid ${C.border}` }}>Searching AI database…</div>}
+                      {aiLoad && dropList.length>0 && <div style={{ padding:8, fontSize:11, color:C.muted, textAlign:"center", borderTop:`1px solid ${C.border}` }}>Loading more…</div>}
                     </div>
                   )}
                 </div>
@@ -1715,6 +1754,7 @@ export default function App() {
         ::placeholder{color:#2a4a2a!important}
         button{font-family:system-ui,-apple-system,sans-serif}
         body{background:#0c0905}
+        @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes scrollUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
         @keyframes scrollDown{from{transform:translateY(-50%)}to{transform:translateY(0)}}
         @keyframes slideDown{from{transform:translateX(-50%) translateY(-20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
