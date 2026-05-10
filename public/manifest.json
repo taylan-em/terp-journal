@@ -1,12 +1,23 @@
 {
-  "name": "Terp Journal",
-  "short_name": "Terp",
+  "name": "Resin",
+  "short_name": "Resin",
   "description": "Cannabis experience log",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#060d07",
-  "theme_color": "#a3e635",
+  "background_color": "#0c0905",
+  "theme_color": "#f97316",
   "icons": [
-    { "src": "/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml" }
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }
