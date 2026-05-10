@@ -88,7 +88,7 @@ const Sound = {
 const RANKS = [
   { min:0,    title:"Green Thumb",      icon:"🌱", color:"#86efac" },
   { min:3,    title:"Casual Terper",    icon:"🌿", color:"#4ade80" },
-  { min:8,    title:"Strain Explorer",  icon:"🔍", color:"#a3e635" },
+  { min:8,    title:"Strain Explorer",  icon:"🔍", color:"#f97316" },
   { min:15,   title:"Bud Connoisseur",  icon:"🌺", color:"#fb923c" },
   { min:25,   title:"Terpene Scholar",  icon:"🧪", color:"#a78bfa" },
   { min:40,   title:"Strain Hunter",    icon:"🎯", color:"#f59e0b" },
@@ -260,13 +260,13 @@ const STRAIN_DB = [
   { name:"Gary Payton",         type:"Hybrid", thc:25, cbd:0,  effects:["Euphoric","Focused","Happy"],   flavors:["Earthy","Pepper","Sweet"],  description:"Peppery, cerebral." },
 ];
 
-const typeColor = t => t==="Indica"?"#a78bfa":t==="Sativa"?"#fbbf24":"#34d399";
+const typeColor = t => t==="Indica"?"#a78bfa":t==="Sativa"?"#fbbf24":"#fbbf24";
 const typeBg    = t => t==="Indica"?"#1e1b4b":t==="Sativa"?"#431407":"#022c22";
 
 const C = {
-  bg:"#080f09", card:"#0e1a0f", border:"#1c2e1c",
-  accent:"#a3e635", accentDim:"#a3e63520",
-  text:"#d4e8c2", muted:"#4a6a4a", faint:"#1e3020",
+  bg:"#0c0905", card:"#110a04", border:"#2a1a08",
+  accent:"#f97316", accentDim:"#f9731620",
+  text:"#d4e8c2", muted:"#6b3a10", faint:"#2a1608",
   amber:"#f59e0b", amberDim:"#f59e0b22",
   purple:"#a78bfa",
 };
@@ -284,28 +284,72 @@ const mkForm = () => ({
 });
 
 // ─── LOGO MARK ────────────────────────────────────────────────────────────────
-const LogoMark = ({ size=32 }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" style={{ flexShrink:0, display:"block" }}>
-    <rect width="100" height="100" rx="20" fill="#0a1f0a"/>
-    <g transform="translate(50,54)">
-      <polygon points="0,-28 2.8,-14 0,2 -2.8,-14" fill="#0a1f0a" stroke="#a3e635" strokeWidth="2.2" strokeLinejoin="round"/>
-      <polygon points="0,-28 2.8,-14 0,2 -2.8,-14" fill="#0a1f0a" stroke="#a3e635" strokeWidth="2" strokeLinejoin="round" transform="rotate(-36,0,0)"/>
-      <polygon points="0,-28 2.8,-14 0,2 -2.8,-14" fill="#0a1f0a" stroke="#a3e635" strokeWidth="2" strokeLinejoin="round" transform="rotate(36,0,0)"/>
-      <polygon points="0,-25 2.4,-12 0,2 -2.4,-12" fill="#0a1f0a" stroke="#6aaa18" strokeWidth="1.7" strokeLinejoin="round" transform="rotate(-72,0,0)"/>
-      <polygon points="0,-25 2.4,-12 0,2 -2.4,-12" fill="#0a1f0a" stroke="#6aaa18" strokeWidth="1.7" strokeLinejoin="round" transform="rotate(72,0,0)"/>
-      <polygon points="0,-21 2,-10 0,2 -2,-10" fill="#0a1f0a" stroke="#4a8010" strokeWidth="1.4" strokeLinejoin="round" transform="rotate(-108,0,0)"/>
-      <polygon points="0,-21 2,-10 0,2 -2,-10" fill="#0a1f0a" stroke="#4a8010" strokeWidth="1.4" strokeLinejoin="round" transform="rotate(108,0,0)"/>
-      <line x1="0" y1="2" x2="0" y2="12" stroke="#4a8a18" strokeWidth="4" strokeLinecap="round"/>
-      <line x1="0" y1="-28" x2="0" y2="-34" stroke="#2a5010" strokeWidth="1.5"/>
-      <circle cx="0" cy="-34" r="4" fill="#a3e635"/>
-      <circle cx="0" cy="-34" r="7" fill="none" stroke="#a3e635" strokeWidth="0.8" opacity="0.3"/>
-      <circle cx="-14" cy="-30" r="3" fill="#a3e635"/>
-      <circle cx="14" cy="-30" r="3" fill="#a3e635"/>
-      <circle cx="0" cy="0" r="4" fill="#0a1f0a" stroke="#a3e635" strokeWidth="1.5"/>
-      <circle cx="0" cy="0" r="1.5" fill="#a3e635"/>
-    </g>
-  </svg>
-);
+const LogoMark = ({ size=32 }) => {
+  const s = size / 100;
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ flexShrink:0, display:"block" }}>
+      <defs>
+        <linearGradient id="lmtbl" x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%" stopColor="#fff7ed"/>
+          <stop offset="35%" stopColor="#fed7aa"/>
+          <stop offset="100%" stopColor="#ea580c"/>
+        </linearGradient>
+        <linearGradient id="lmlf" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#c2410c"/>
+          <stop offset="100%" stopColor="#7c2d12"/>
+        </linearGradient>
+        <linearGradient id="lmrf" x1="100%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#fb923c"/>
+          <stop offset="100%" stopColor="#9a3412"/>
+        </linearGradient>
+        <linearGradient id="lmll" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#7c2d12"/>
+          <stop offset="100%" stopColor="#3d1407"/>
+        </linearGradient>
+        <linearGradient id="lmlr" x1="100%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#9a3412"/>
+          <stop offset="100%" stopColor="#3d1407"/>
+        </linearGradient>
+        <linearGradient id="lmiris" x1="30%" y1="20%" x2="70%" y2="80%">
+          <stop offset="0%" stopColor="#fed7aa"/>
+          <stop offset="50%" stopColor="#f97316"/>
+          <stop offset="100%" stopColor="#7c2d12"/>
+        </linearGradient>
+      </defs>
+      <rect width="100" height="100" rx="20" fill="#0c0905"/>
+      {/* pavilion */}
+      <polygon points="50,88 21,55 37,50" fill="url(#lmll)" stroke="#431407" strokeWidth="0.8" strokeLinejoin="round"/>
+      <polygon points="50,88 79,55 63,50" fill="url(#lmlr)" stroke="#561e0a" strokeWidth="0.8" strokeLinejoin="round"/>
+      <polygon points="37,50 50,88 63,50 50,53" fill="#6b2210" stroke="#7c2d12" strokeWidth="0.6" strokeLinejoin="round"/>
+      {/* crown */}
+      <polygon points="50,12 21,55 37,50 50,39" fill="url(#lmlf)" stroke="#ea580c" strokeWidth="0.8" strokeLinejoin="round"/>
+      <polygon points="50,12 79,55 63,50 50,39" fill="url(#lmrf)" stroke="#fb923c" strokeWidth="1" strokeLinejoin="round"/>
+      <polygon points="50,12 21,55 29,40" fill="#9a3412" stroke="#c2410c" strokeWidth="0.6" strokeLinejoin="round"/>
+      <polygon points="50,12 79,55 71,40" fill="#7c2d12" stroke="#ea580c" strokeWidth="0.6" strokeLinejoin="round"/>
+      {/* table */}
+      <polygon points="29,40 50,12 71,40 63,50 50,39 37,50" fill="url(#lmtbl)" stroke="#fed7aa" strokeWidth="1.2" strokeLinejoin="round"/>
+      <line x1="29" y1="40" x2="50" y2="12" stroke="#fff7ed" strokeWidth="0.8" opacity="0.3"/>
+      <line x1="50" y1="12" x2="79" y2="55" stroke="#fed7aa" strokeWidth="0.8" opacity="0.3"/>
+      {/* eye */}
+      <path d="M50,38 C40,38 30,44 24,50 C30,56 40,62 50,62 C60,62 70,56 76,50 C70,44 60,38 50,38 Z" fill="#1c0e04" stroke="#f97316" strokeWidth="1"/>
+      <circle cx="50" cy="50" r="9" fill="url(#lmiris)"/>
+      <circle cx="50" cy="50" r="5" fill="#0a0602"/>
+      <ellipse cx="50" cy="50" rx="2" ry="5" fill="#060402"/>
+      <circle cx="47" cy="47" r="2" fill="#ffffff" opacity="0.6"/>
+      {/* eyelid lines */}
+      <path d="M24,48 C35,39 43,37 50,37 C57,37 65,39 76,48" fill="none" stroke="#f97316" strokeWidth="0.8" opacity="0.55"/>
+      <path d="M25,52 C36,60 43,62 50,62 C57,62 64,60 75,52" fill="none" stroke="#ea580c" strokeWidth="0.7" opacity="0.4"/>
+      {/* lashes */}
+      <line x1="26" y1="46" x2="23" y2="41" stroke="#f97316" strokeWidth="0.8" opacity="0.6"/>
+      <line x1="35" y1="40" x2="33" y2="35" stroke="#f97316" strokeWidth="0.8" opacity="0.6"/>
+      <line x1="50" y1="37" x2="50" y2="32" stroke="#f97316" strokeWidth="0.9" opacity="0.7"/>
+      <line x1="65" y1="40" x2="67" y2="35" stroke="#f97316" strokeWidth="0.8" opacity="0.6"/>
+      <line x1="74" y1="46" x2="77" y2="41" stroke="#f97316" strokeWidth="0.8" opacity="0.6"/>
+      {/* culet */}
+      <circle cx="50" cy="88" r="2.5" fill="#fbbf24"/>
+    </svg>
+  );
+};
 
 // ─── COMPONENTS ───────────────────────────────────────────────────────────────
 const Card = ({ children, style={}, onClick }) => (
@@ -358,7 +402,7 @@ const StepDots = ({ current, total, onGo }) => (
     {Array.from({length:total},(_,i)=>(
       <button key={i} onClick={()=>{ Sound.play("tap"); onGo(i); }} style={{
         width:i===current?20:8, height:8, borderRadius:4, border:"none", cursor:"pointer",
-        background:i<current?"#34d399":i===current?C.accent:C.faint, transition:"all 0.25s",
+        background:i<current?"#fbbf24":i===current?C.accent:C.faint, transition:"all 0.25s",
       }}/>
     ))}
   </div>
@@ -424,7 +468,7 @@ const LevelUpOverlay = ({ rank, onClose }) => {
         <div style={{ fontSize:28, fontWeight:800, color:rank.color, marginBottom:8 }}>{rank.title}</div>
         <div style={{ fontSize:14, color:C.muted }}>Keep logging to advance</div>
         <button onClick={onClose} style={{ marginTop:20, padding:"10px 28px", borderRadius:20, border:"none",
-          background:rank.color, color:"#060d07", fontWeight:700, cursor:"pointer", fontSize:14 }}>
+          background:rank.color, color:"#080502", fontWeight:700, cursor:"pointer", fontSize:14 }}>
           Let's go →
         </button>
       </div>
@@ -444,7 +488,7 @@ const PassportCard = ({ strain, sessions, allStrains }) => {
   const photos = ss.flatMap(s=>s.photos||[]).slice(0,1);
 
   return (
-    <div style={{ background:`linear-gradient(135deg,${C.card},${st?typeBg(st.type):"#0a150b"})`,
+    <div style={{ background:`linear-gradient(135deg,${C.card},${st?typeBg(st.type):"#160900"})`,
       border:`2px solid ${st?typeColor(st.type)+"44":C.border}`, borderRadius:20, padding:16, marginBottom:10,
       boxShadow:st?`0 4px 20px ${typeColor(st.type)}15`:undefined }}>
       <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
@@ -545,7 +589,7 @@ const DailyRitual = ({ sessions, onLog }) => {
             {daysSince===0?"You haven't logged yet today.":daysSince===1?"Last logged yesterday.":daysSince?`Last logged ${daysSince} days ago.`:"Start your journal today."}
           </div>
           <button onClick={onLog} style={{ padding:"10px 20px", borderRadius:20, border:"none", cursor:"pointer",
-            background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07", fontSize:13, fontWeight:700,
+            background:`linear-gradient(135deg,#c2410c,${C.accent})`, color:"#080502", fontSize:13, fontWeight:700,
             boxShadow:`0 4px 16px ${C.accent}33` }}>
             {loggedToday?"Log another session":"Log today's session"} →
           </button>
@@ -558,10 +602,10 @@ const DailyRitual = ({ sessions, onLog }) => {
 // ─── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [tab,      setTab]      = useState("home");
-  const [sessions, setSessions] = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj7_s")||"[]")}catch{return []} });
-  const [custom,   setCustom]   = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj7_c")||"[]")}catch{return []} });
-  const [profile,  setProfile]  = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj7_p")||"null")}catch{return null} });
-  const [unlockedMilestones, setUnlockedMilestones] = useState(()=>{ try{return JSON.parse(localStorage.getItem("tj7_m")||"[]")}catch{return []} });
+  const [sessions, setSessions] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_s")||"[]")}catch{return []} });
+  const [custom,   setCustom]   = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_c")||"[]")}catch{return []} });
+  const [profile,  setProfile]  = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_p")||"null")}catch{return null} });
+  const [unlockedMilestones, setUnlockedMilestones] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_m")||"[]")}catch{return []} });
 
   const [step,       setStep]       = useState(0);
   const [form,       setForm]       = useState(mkForm());
@@ -587,10 +631,10 @@ export default function App() {
   const [addingStrain, setAddingStrain] = useState(false);
   const [newS, setNewS] = useState({name:"",type:"Hybrid",thc:"",cbd:"",description:""});
 
-  useEffect(()=>{ localStorage.setItem("tj7_s", JSON.stringify(sessions)); },[sessions]);
-  useEffect(()=>{ localStorage.setItem("tj7_c", JSON.stringify(custom));   },[custom]);
-  useEffect(()=>{ localStorage.setItem("tj7_p", JSON.stringify(profile));  },[profile]);
-  useEffect(()=>{ localStorage.setItem("tj7_m", JSON.stringify(unlockedMilestones)); },[unlockedMilestones]);
+  useEffect(()=>{ localStorage.setItem("rs_s", JSON.stringify(sessions)); },[sessions]);
+  useEffect(()=>{ localStorage.setItem("rs_c", JSON.stringify(custom));   },[custom]);
+  useEffect(()=>{ localStorage.setItem("rs_p", JSON.stringify(profile));  },[profile]);
+  useEffect(()=>{ localStorage.setItem("rs_m", JSON.stringify(unlockedMilestones)); },[unlockedMilestones]);
 
   useEffect(()=>{
     const h=e=>{ if(searchRef.current&&!searchRef.current.contains(e.target)) setSdrop(false); };
@@ -650,7 +694,7 @@ export default function App() {
   const tryAI = useCallback(async(q)=>{
     setAiLoad(true);
     try {
-      const r = await fetch("/api/claude",{
+      const r = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:600,
           system:`Cannabis strain database. Return ONLY a raw JSON array, no markdown, no extra text. Up to 4 matching strains. Each object must have exactly: name(string), type("Indica"|"Sativa"|"Hybrid"), thc(number 10-32), cbd(number 0-20), effects(array of 3 strings), flavors(array of 3 strings), description(string max 8 words). Respond with ONLY the JSON array starting with [`,
@@ -695,7 +739,7 @@ export default function App() {
     if (strainAnecdotes[strainName]) return;
     setLoadingAnecdotes(true);
     try {
-      const r = await fetch("/api/claude",{
+      const r = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800,
           system:`You are a cannabis strain expert. Generate 3 authentic-sounding user anecdotes/reviews for the strain given. Return ONLY a raw JSON array of 3 objects, no markdown. Each object: { "user": "anonymous username like DesertFox42", "rating": number 1-5, "review": "2-3 sentence personal experience written in first person, conversational, specific about effects and context", "method": "how they consumed it" }. Make them feel real and varied — different experiences, methods, outcomes.`,
@@ -780,7 +824,7 @@ export default function App() {
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:28 }}>
             <LogoMark size={40}/>
             <div>
-              <div style={{ fontSize:20, fontWeight:800, color:C.accent }}>Welcome to Terp Journal</div>
+              <div style={{ fontSize:20, fontWeight:800, color:C.accent }}>Welcome to Resin</div>
               <div style={{ fontSize:12, color:C.muted }}>Quick setup — takes 30 seconds</div>
             </div>
           </div>
@@ -797,7 +841,7 @@ export default function App() {
                   borderRadius:12, color:C.text, fontSize:14, boxSizing:"border-box", marginBottom:14 }}/>
               <button onClick={()=>{ Sound.play("save"); setProfile({...quizAnswers,completedAt:new Date().toISOString()}); }}
                 style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                  background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07", fontSize:15, fontWeight:700 }}>
+                  background:`linear-gradient(135deg,#c2410c,${C.accent})`, color:"#080502", fontSize:15, fontWeight:700 }}>
                 Get Started →
               </button>
             </div>
@@ -865,7 +909,7 @@ export default function App() {
               </div>
               {strainAnecdotes[passportStrain] ? (
                 strainAnecdotes[passportStrain].map((a,i)=>(
-                  <div key={i} style={{ background:"#0a150b", borderRadius:12, padding:12, marginBottom:8 }}>
+                  <div key={i} style={{ background:"#160900", borderRadius:12, padding:12, marginBottom:8 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
                       <span style={{ fontSize:12, fontWeight:600, color:C.accent }}>@{a.user}</span>
                       <span style={{ fontSize:11, color:C.amber }}>{"⭐".repeat(a.rating)}</span>
@@ -891,7 +935,7 @@ export default function App() {
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <LogoMark size={32}/>
           <div>
-            <div style={{ fontSize:15, fontWeight:800, color:C.accent }}>Terp Journal</div>
+            <div style={{ fontSize:15, fontWeight:800, color:C.accent }}>Resin</div>
             <div style={{ fontSize:10, color:rank.color }}>{rank.icon} {rank.title}</div>
           </div>
         </div>
@@ -924,12 +968,12 @@ export default function App() {
                 <StrainGallery/>
                 <div style={{ position:"relative", zIndex:1, textAlign:"center", padding:"0 20px" }}>
                   <LogoMark size={72}/>
-                  <div style={{ fontSize:26, fontWeight:800, color:C.accent, marginTop:16, marginBottom:8 }}>Terp Journal</div>
+                  <div style={{ fontSize:26, fontWeight:800, color:C.accent, marginTop:16, marginBottom:8 }}>Resin</div>
                   <div style={{ fontSize:15, color:C.muted, lineHeight:1.6, marginBottom:8 }}>Track your cannabis. Discover what works.</div>
                   <div style={{ fontSize:13, color:rank.color, marginBottom:28 }}>{rank.icon} You start as a {rank.title}</div>
                   <button onClick={()=>{ Sound.play("select"); setTab("log"); }} style={{
                     padding:"14px 32px", borderRadius:50, border:"none", cursor:"pointer",
-                    background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07",
+                    background:`linear-gradient(135deg,#c2410c,${C.accent})`, color:"#080502",
                     fontSize:16, fontWeight:800, boxShadow:`0 4px 24px ${C.accent}44`, marginBottom:32 }}>
                     Log your first session →
                   </button>
@@ -959,7 +1003,7 @@ export default function App() {
                   {[
                     {v:sessions.length, l:"Sessions",   c:C.accent,  i:"📋"},
                     {v:avgRating,        l:"Avg Rating", c:C.amber,   i:"⭐"},
-                    {v:strainNames.length,l:"Strains",   c:"#34d399", i:"🌱"},
+                    {v:strainNames.length,l:"Strains",   c:"#fbbf24", i:"🌱"},
                   ].map(x=>(
                     <Card key={x.l} style={{ textAlign:"center", padding:12 }}>
                       <div style={{ fontSize:18, marginBottom:2 }}>{x.i}</div>
@@ -1093,13 +1137,13 @@ export default function App() {
                         <button key={r.name+i} onClick={()=>pickStrain(r)} style={{
                           width:"100%", padding:"12px 14px", background:"transparent", border:"none",
                           borderBottom:i<dropList.length-1?`1px solid ${C.border}`:"none", cursor:"pointer", textAlign:"left" }}
-                          onMouseEnter={e=>e.currentTarget.style.background="#0d2a0d"}
+                          onMouseEnter={e=>e.currentTarget.style.background="#1e1002"}
                           onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:3 }}>
                             <span style={{ fontWeight:700, color:C.text, fontSize:14 }}>{r.name}</span>
                             <span style={{ fontSize:10, padding:"2px 8px", background:typeBg(r.type), border:`1px solid ${typeColor(r.type)}44`, borderRadius:10, color:typeColor(r.type) }}>{r.type}</span>
                             <span style={{ fontSize:11, color:C.amber }}>THC {r.thc}%</span>
-                            {r.cbd>0&&<span style={{ fontSize:11, color:"#34d399" }}>CBD {r.cbd}%</span>}
+                            {r.cbd>0&&<span style={{ fontSize:11, color:"#fbbf24" }}>CBD {r.cbd}%</span>}
                           </div>
                           <div style={{ fontSize:11, color:C.muted }}>{r.description}</div>
                         </button>
@@ -1119,7 +1163,7 @@ export default function App() {
                         </div>
                         <div style={{ display:"flex", gap:12, fontSize:13, marginBottom:6 }}>
                           <span style={{ color:C.amber, fontWeight:600 }}>THC {curStrain.thc}%</span>
-                          {curStrain.cbd>0&&<span style={{ color:"#34d399", fontWeight:600 }}>CBD {curStrain.cbd}%</span>}
+                          {curStrain.cbd>0&&<span style={{ color:"#fbbf24", fontWeight:600 }}>CBD {curStrain.cbd}%</span>}
                         </div>
                         <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>{curStrain.description}</div>
                         <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
@@ -1157,16 +1201,16 @@ export default function App() {
                         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
                           {[["Name","name","text"],["THC %","thc","number"],["CBD %","cbd","number"]].map(([ph,k,t])=>(
                             <input key={k} type={t} placeholder={ph} value={newS[k]||""} onChange={e=>setNewS(s=>({...s,[k]:t==="number"?+e.target.value:e.target.value}))}
-                              style={{ padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:12 }}/>
+                              style={{ padding:"10px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:12 }}/>
                           ))}
                           <select value={newS.type} onChange={e=>setNewS(s=>({...s,type:e.target.value}))}
-                            style={{ padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:12 }}>
+                            style={{ padding:"10px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:12 }}>
                             <option>Hybrid</option><option>Indica</option><option>Sativa</option>
                           </select>
                         </div>
                         <div style={{ display:"flex", gap:8 }}>
                           <button onClick={()=>{ if(newS.name){ Sound.play("select"); setCustom(p=>[{...newS,effects:[],flavors:[],description:""},...p]); setForm(f=>({...f,strain:newS.name})); setNewS({name:"",type:"Hybrid",thc:"",cbd:"",description:""}); setAddingStrain(false); }}}
-                            style={{ flex:1, padding:"10px", borderRadius:10, border:"none", background:C.accent, color:"#060d07", fontWeight:700, cursor:"pointer", fontSize:13 }}>
+                            style={{ flex:1, padding:"10px", borderRadius:10, border:"none", background:C.accent, color:"#080502", fontWeight:700, cursor:"pointer", fontSize:13 }}>
                             Save & Use
                           </button>
                           <button onClick={()=>setAddingStrain(false)}
@@ -1248,7 +1292,7 @@ export default function App() {
                 <Card style={{ marginTop:12 }}>
                   <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>DATE & TIME</div>
                   <input type="datetime-local" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}
-                    style={{ width:"100%", padding:"10px 12px", background:"#0a1a0b", border:`1px solid ${C.border}`, borderRadius:10, color:C.text, fontSize:12, boxSizing:"border-box" }}/>
+                    style={{ width:"100%", padding:"10px 12px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:10, color:C.text, fontSize:12, boxSizing:"border-box" }}/>
                 </Card>
               </div>
             )}
@@ -1347,7 +1391,7 @@ export default function App() {
                   {optionalOpen.physMed && PHYSICAL_MEDICAL.map(f=><BidirSlider key={f.id} {...f} value={form.physical[f.id]||0} onChange={v=>setForm(fv=>({...fv,physical:{...fv.physical,[f.id]:v}}))} color="#6ee7b7"/>)}
                   <textarea value={form.physicalNotes} onChange={e=>setForm(f=>({...f,physicalNotes:e.target.value}))}
                     placeholder="Physical effects..." rows={2}
-                    style={{ width:"100%", marginTop:8, padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`, borderRadius:10, color:C.text, fontSize:12, resize:"none", boxSizing:"border-box" }}/>
+                    style={{ width:"100%", marginTop:8, padding:"10px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:10, color:C.text, fontSize:12, resize:"none", boxSizing:"border-box" }}/>
                   <div style={{ fontSize:13, fontWeight:600, color:"#67e8f9", marginTop:16, marginBottom:12 }}>🧠 Mental</div>
                   {MENTAL_CORE.map(f=><BidirSlider key={f.id} {...f} value={form.mental[f.id]||0} onChange={v=>setForm(fv=>({...fv,mental:{...fv.mental,[f.id]:v}}))} color="#67e8f9"/>)}
                   <button onClick={()=>setOptionalOpen(o=>({...o,mentMed:!o.mentMed}))}
@@ -1377,14 +1421,14 @@ export default function App() {
                   style={{ flex:2, padding:"14px", borderRadius:14, border:"none",
                     cursor:step===0&&!form.strain?"not-allowed":"pointer",
                     background:step===0&&!form.strain?C.faint:`linear-gradient(135deg,#2a6a0a,${C.accent})`,
-                    color:step===0&&!form.strain?C.muted:"#060d07", fontSize:14, fontWeight:700,
+                    color:step===0&&!form.strain?C.muted:"#080502", fontSize:14, fontWeight:700,
                     boxShadow:step===0&&!form.strain?undefined:`0 4px 16px ${C.accent}33` }}>
                   {step===0&&!form.strain?"Pick a strain first":"Continue →"}
                 </button>
               ) : (
                 <button onClick={saveSession} style={{
                   flex:2, padding:"14px", borderRadius:14, border:"none", cursor:"pointer",
-                  background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07",
+                  background:`linear-gradient(135deg,#c2410c,${C.accent})`, color:"#080502",
                   fontSize:14, fontWeight:700, boxShadow:`0 4px 16px ${C.accent}33` }}>
                   ✦ Save Session
                 </button>
@@ -1444,7 +1488,7 @@ export default function App() {
                       )}
                       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:5, marginTop:12, marginBottom:10 }}>
                         {RATINGS.map(r=>(
-                          <div key={r.id} style={{ background:"#0a150b", borderRadius:10, padding:"8px 4px", textAlign:"center" }}>
+                          <div key={r.id} style={{ background:"#160900", borderRadius:10, padding:"8px 4px", textAlign:"center" }}>
                             <div style={{ fontSize:13 }}>{r.icon}</div>
                             <div style={{ fontSize:15, fontWeight:800, color:r.color }}>{s.ratings?.[r.id]||"—"}</div>
                             <div style={{ fontSize:9, color:C.muted }}>{r.label}</div>
@@ -1523,7 +1567,7 @@ export default function App() {
                 {MILESTONES.map(m=>{
                   const earned = unlockedMilestones.includes(m.id);
                   return (
-                    <div key={m.id} style={{ background:earned?"#0a1f0a":"#0a0f0a", border:`1px solid ${earned?C.accent+"33":C.border}`,
+                    <div key={m.id} style={{ background:earned?"#140a02":"#0a0f0a", border:`1px solid ${earned?C.accent+"33":C.border}`,
                       borderRadius:10, padding:"10px 12px", opacity:earned?1:0.5 }}>
                       <div style={{ fontSize:20, marginBottom:4 }}>{m.icon}</div>
                       <div style={{ fontSize:12, fontWeight:600, color:earned?C.accent:C.muted }}>{m.title}</div>
@@ -1564,7 +1608,7 @@ export default function App() {
                     <span key={v} style={{ fontSize:12, padding:"4px 10px", background:C.accentDim, borderRadius:10, color:C.accent }}>{v}</span>
                   ))}
                 </div>
-                <button onClick={()=>{ localStorage.removeItem("tj7_p"); setProfile(null); setQuizStep(0); setQuizAnswers({}); }}
+                <button onClick={()=>{ localStorage.removeItem("rs_p"); setProfile(null); setQuizStep(0); setQuizAnswers({}); }}
                   style={{ padding:"7px 14px", borderRadius:8, border:`1px solid ${C.border}`,
                     background:"transparent", color:C.muted, cursor:"pointer", fontSize:12 }}>
                   Redo setup quiz
@@ -1576,7 +1620,7 @@ export default function App() {
               <div style={{ display:"flex", gap:12, alignItems:"center", marginBottom:10 }}>
                 <LogoMark size={40}/>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:700, color:C.accent }}>Terp Journal</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:C.accent }}>Resin</div>
                   <div style={{ fontSize:11, color:C.muted }}>Cannabis Experience Log · v2.0</div>
                 </div>
               </div>
@@ -1599,7 +1643,7 @@ export default function App() {
             <Card style={{ marginBottom:12 }}>
               <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>STRAIN</div>
               <select value={editingSession.strain} onChange={e=>setEditingSession(s=>({...s,strain:e.target.value}))}
-                style={{ width:"100%", padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:13 }}>
+                style={{ width:"100%", padding:"10px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:13 }}>
                 {allStrains.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
               </select>
             </Card>
@@ -1624,11 +1668,11 @@ export default function App() {
             <Card style={{ marginBottom:12 }}>
               <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>NOTES</div>
               <textarea value={editingSession.notes||""} onChange={e=>setEditingSession(s=>({...s,notes:e.target.value}))}
-                rows={3} style={{ width:"100%", padding:"10px", background:"#0a1a0b", border:`1px solid ${C.border}`,
+                rows={3} style={{ width:"100%", padding:"10px", background:"#140800", border:`1px solid ${C.border}`,
                   borderRadius:8, color:C.text, fontSize:13, resize:"none", boxSizing:"border-box" }}/>
             </Card>
             <button onClick={()=>saveEdit(editingSession)} style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-              background:`linear-gradient(135deg,#2a6a0a,${C.accent})`, color:"#060d07", fontSize:14, fontWeight:700 }}>
+              background:`linear-gradient(135deg,#c2410c,${C.accent})`, color:"#080502", fontSize:14, fontWeight:700 }}>
               Save Changes
             </button>
           </div>
@@ -1663,14 +1707,14 @@ export default function App() {
       <style>{`
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         input:focus,select:focus,textarea:focus{outline:2px solid #a3e63540!important;outline-offset:1px}
-        .styled-slider{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;outline:none;background:linear-gradient(90deg,var(--col) var(--pct),#1e3020 var(--pct));cursor:pointer}
+        .styled-slider{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;outline:none;background:linear-gradient(90deg,var(--col) var(--pct),#2a1506 var(--pct));cursor:pointer}
         .styled-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--col);cursor:pointer;border:3px solid #080f09;box-shadow:0 0 8px var(--col,#a3e635)55}
         .styled-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--col);cursor:pointer;border:3px solid #080f09}
         ::-webkit-scrollbar{width:3px}
         ::-webkit-scrollbar-thumb{background:#1c2e1c;border-radius:2px}
         ::placeholder{color:#2a4a2a!important}
         button{font-family:system-ui,-apple-system,sans-serif}
-        body{background:#080f09}
+        body{background:#0c0905}
         @keyframes scrollUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
         @keyframes scrollDown{from{transform:translateY(-50%)}to{transform:translateY(0)}}
         @keyframes slideDown{from{transform:translateX(-50%) translateY(-20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
