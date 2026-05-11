@@ -143,15 +143,15 @@ const checkMilestones = (sessions, profile) => MILESTONES.filter(m => m.check(se
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const METHODS = [
-  { id:"joint",     emoji:"🚬", label:"Joint",      unit:"g",    min:0.1,  max:3,   step:0.1,  def:0.5,  tips:["Roll tight for an even burn","Use a crutch/filter for cooler smoke","Grind evenly for best airflow"] },
-  { id:"blunt",     emoji:"🍂", label:"Blunt",      unit:"g",    min:0.5,  max:5,   step:0.1,  def:1,    tips:["Lick the wrap lightly — not too wet","Let it dry 30 seconds after sealing","Rotate while smoking for even burn"] },
-  { id:"pipe",      emoji:"🪈", label:"Pipe",       unit:"g",    min:0.1,  max:2,   step:0.1,  def:0.3,  tips:["Corner the bowl — don't burn it all at once","Clean your pipe weekly for best flavour","Pack loosely for better airflow"] },
-  { id:"bong",      emoji:"🫧", label:"Bong",       unit:"g",    min:0.1,  max:2,   step:0.1,  def:0.3,  tips:["Change water every session","Ice in the tube cools the smoke significantly","Clear the chamber fully for best effect"] },
-  { id:"dryvape",   emoji:"🌬️", label:"Dry Vape",   unit:"g",    min:0.05, max:1,   step:0.05, def:0.15, tips:["Start at 170°C, work up slowly","Grind fine for even heat distribution","ABV (already been vaped) can be reused in edibles"] },
-  { id:"resinvape", emoji:"🛢️", label:"Resin Vape", unit:"puffs",min:1,    max:30,  step:1,    def:3,    tips:["Store carts upright to prevent leaks","Keep below 200°C to preserve terpenes","Preheat mode warms thick oil better"] },
-  { id:"dab",       emoji:"🧪", label:"Dab",        unit:"g",    min:0.05, max:1,   step:0.05, def:0.1,  tips:["Low temp dabs (450-550°F) preserve terpenes","Let the nail cool 30-45 seconds after heating","Use a carb cap for full flavour extraction"] },
-  { id:"edible",    emoji:"🍫", label:"Edible",     unit:"mg",   min:2.5,  max:100, step:2.5,  def:10,   tips:["Wait 90 minutes before considering more","Eat a light meal first for consistent absorption","Effects last 4-8 hours — plan accordingly"] },
-  { id:"tincture",  emoji:"💧", label:"Tincture",   unit:"ml",   min:0.5,  max:10,  step:0.5,  def:1,    tips:["Hold under tongue 60-90 seconds for fastest effect","Faster onset than edibles when held sublingually","Start with 0.5ml and wait 45 minutes"] },
+  { id:"joint",     emoji:"🚬", label:"Joint",      unit:"g",    min:0.1,  max:10,  step:0.1,  def:0.5,  tips:["Roll tight for an even burn","Use a crutch/filter for cooler smoke","Grind evenly for best airflow"] },
+  { id:"blunt",     emoji:"🍂", label:"Blunt",      unit:"g",    min:0.5,  max:10,  step:0.1,  def:1,    tips:["Lick the wrap lightly — not too wet","Let it dry 30 seconds after sealing","Rotate while smoking for even burn"] },
+  { id:"pipe",      emoji:"🪈", label:"Pipe",       unit:"g",    min:0.1,  max:5,   step:0.1,  def:0.3,  tips:["Corner the bowl — don't burn it all at once","Clean your pipe weekly for best flavour","Pack loosely for better airflow"] },
+  { id:"bong",      emoji:"🫧", label:"Bong",       unit:"g",    min:0.1,  max:5,   step:0.1,  def:0.3,  tips:["Change water every session","Ice in the tube cools the smoke significantly","Clear the chamber fully for best effect"] },
+  { id:"dryvape",   emoji:"🌬️", label:"Dry Vape",   unit:"g",    min:0.05, max:2,   step:0.05, def:0.15, tips:["Start at 170°C, work up slowly","Grind fine for even heat distribution","ABV (already been vaped) can be reused in edibles"] },
+  { id:"resinvape", emoji:"🛢️", label:"Resin Vape", unit:"puffs",min:1,    max:60,  step:1,    def:3,    tips:["Store carts upright to prevent leaks","Keep below 200°C to preserve terpenes","Preheat mode warms thick oil better"] },
+  { id:"dab",       emoji:"🧪", label:"Dab",        unit:"g",    min:0.05, max:3,   step:0.05, def:0.1,  tips:["Low temp dabs (450-550°F) preserve terpenes","Let the nail cool 30-45 seconds after heating","Use a carb cap for full flavour extraction"] },
+  { id:"edible",    emoji:"🍫", label:"Edible",     unit:"mg",   min:2.5,  max:500, step:2.5,  def:10,   tips:["Wait 90 minutes before considering more","Eat a light meal first for consistent absorption","Effects last 4-8 hours — plan accordingly"] },
+  { id:"tincture",  emoji:"💧", label:"Tincture",   unit:"ml",   min:0.5,  max:30,  step:0.5,  def:1,    tips:["Hold under tongue 60-90 seconds for fastest effect","Faster onset than edibles when held sublingually","Start with 0.5ml and wait 45 minutes"] },
 ];
 
 const EFFECTS = ["Relaxed","Euphoric","Happy","Creative","Focused","Sleepy","Uplifted","Energetic","Calm","Hungry","Talkative","Giggly"];
@@ -630,6 +630,9 @@ export default function App() {
   const searchRef = useRef(null);
   const aiTimer   = useRef(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [sessionSearch, setSessionSearch] = useState("");
+  const [sessionFilter, setSessionFilter] = useState("all"); // all | indica | sativa | hybrid | method
+  const [sessionSort, setSessionSort] = useState("newest"); // newest | oldest | highest | lowest
   const [addingStrain, setAddingStrain] = useState(false);
   const [newS, setNewS] = useState({name:"",type:"Hybrid",thc:"",cbd:"",description:""});
 
@@ -853,7 +856,21 @@ export default function App() {
                 onChange={e=>setQuizAnswers(a=>({...a,[current.id]:e.target.value}))}
                 style={{ width:"100%", padding:"14px", background:C.card, border:`1.5px solid ${C.border}`,
                   borderRadius:12, color:C.text, fontSize:14, boxSizing:"border-box", marginBottom:14 }}/>
-              <button onClick={()=>{ Sound.play("save"); setProfile({...quizAnswers,completedAt:new Date().toISOString()}); }}
+              <button onClick={()=>{
+                Sound.play("save");
+                const p = {...quizAnswers,completedAt:new Date().toISOString()};
+                setProfile(p);
+                // Pre-populate past strains
+                if (quizAnswers.pastStrains) {
+                  const names = quizAnswers.pastStrains.split(/[,;]+/).map(s=>s.trim()).filter(Boolean);
+                  names.forEach(name => {
+                    const found = STRAIN_DB.find(s=>s.name.toLowerCase().includes(name.toLowerCase()));
+                    if (found && !custom.find(c=>c.name.toLowerCase()===found.name.toLowerCase())) {
+                      setCustom(prev=>[...prev, found]);
+                    }
+                  });
+                }
+              }}
                 style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                   background:`linear-gradient(135deg,#c2410c,${C.accent})`, color:"#080502", fontSize:15, fontWeight:700 }}>
                 Get Started →
@@ -1319,14 +1336,34 @@ export default function App() {
                     min={curMethod.min} max={curMethod.max} step={curMethod.step}/>
                   <div style={{ textAlign:"center", fontSize:28, fontWeight:800, color:C.accent }}>{form.amount} {curMethod.unit}</div>
                 </Card>
-                {/* Method-specific tip */}
-                <Card style={{ background:`linear-gradient(135deg,${C.card},#0d2a10)`, border:`1px solid ${C.accent}22` }}>
-                  <div style={{ fontSize:11, color:C.accent, marginBottom:8 }}>💡 {curMethod.label} Tips</div>
-                  {curMethod.tips.map((tip,i)=>(
-                    <div key={i} style={{ fontSize:12, color:C.muted, marginBottom:4, paddingLeft:8, borderLeft:`2px solid ${C.accent}44` }}>
-                      {tip}
-                    </div>
-                  ))}
+                {/* Method-specific tip — experience aware */}
+                <Card style={{ background:`linear-gradient(135deg,${C.card},#1a0d02)`, border:`1px solid ${C.accent}22` }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                    <span style={{ fontSize:11, color:C.accent }}>💡 {curMethod.label} Tips</span>
+                    {profile?.experience && <span style={{ fontSize:9, color:C.muted, background:C.faint, padding:"1px 6px", borderRadius:6 }}>{profile.experience}</span>}
+                  </div>
+                  {(()=>{
+                    const exp = profile?.experience||"";
+                    const advanced = exp.includes("5+") || exp.includes("3–5");
+                    const advancedTips = {
+                      joint:["Try hemp papers — slower burn, cleaner flavour profile","62% Boveda humidity packs preserve terpenes long-term"],
+                      blunt:["Hemp wraps eliminate tobacco nicotine cross-tolerance","Rehydrate dry wraps with damp cloth 30 secs before rolling"],
+                      pipe:["Quartz pipes preserve terpene flavour better than glass","Try vaping at low temp first, then combust for full extraction"],
+                      bong:["Percolators maximise surface area for smoother filtration","Food-grade glycerin in tube gives even cooler draws than ice"],
+                      dryvape:["Stir bowl midway — even extraction across the herb bed","Save ABV (already vaped) — decarb is done, use in edibles"],
+                      resinvape:["Live resin carts preserve the most terpenes — seek full-spectrum","Lower voltage (2.4V) = more flavour, higher (3.3V) = more vapour"],
+                      dab:["Cold-start dabs preserve maximum terpene flavour","Reclaim residue can be re-dabbed or dissolved in edible fat"],
+                      edible:["Take with high-fat meal — absorption increases significantly","MCT tincture sublingual alongside edible accelerates onset"],
+                      tincture:["Full-spectrum produces entourage effect vs isolate","Bioavailability increases with fatty foods or grapefruit juice"],
+                    };
+                    const tips = advanced ? [...curMethod.tips, ...(advancedTips[form.method]||[])] : curMethod.tips;
+                    return tips.map((tip,i)=>(
+                      <div key={i} style={{ fontSize:12, color:advanced&&i>=3?"#fbbf24":C.muted, marginBottom:4,
+                        paddingLeft:8, borderLeft:`2px solid ${advanced&&i>=3?"#fbbf2444":C.accent+"44"}` }}>
+                        {tip}
+                      </div>
+                    ));
+                  })()}
                 </Card>
                 <Card style={{ marginTop:12 }}>
                   <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>DATE & TIME</div>
@@ -1485,14 +1522,95 @@ export default function App() {
         {/* ════ HISTORY ════ */}
         {tab==="sessions" && (
           <div>
-            <div style={{ fontSize:12, color:C.muted, marginBottom:14 }}>{sessions.length} session{sessions.length!==1?"s":""}</div>
-            {sessions.length===0 && (
-              <div style={{ textAlign:"center", padding:"50px 20px", color:C.muted }}>
-                <div style={{ fontSize:40, marginBottom:12 }}>📋</div>
-                <div>No sessions yet</div>
-              </div>
-            )}
-            {sessions.map(s=>{
+            {/* Search bar */}
+            <div style={{ position:"relative", marginBottom:10 }}>
+              <input value={sessionSearch} onChange={e=>setSessionSearch(e.target.value)}
+                placeholder="Search strain, effect, note..."
+                style={{ width:"100%", padding:"10px 36px 10px 14px", background:C.card,
+                  border:`1.5px solid ${sessionSearch?C.accent:C.border}`, borderRadius:12,
+                  color:C.text, fontSize:13, boxSizing:"border-box", outline:"none" }}/>
+              <span style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", color:C.muted }}>🔍</span>
+            </div>
+
+            {/* Filter chips */}
+            <div style={{ display:"flex", gap:6, marginBottom:10, overflowX:"auto", paddingBottom:4 }}>
+              {[
+                {id:"all",   label:"All"},
+                {id:"indica",label:"Indica"},
+                {id:"sativa",label:"Sativa"},
+                {id:"hybrid",label:"Hybrid"},
+                {id:"high",  label:"Rated 8+"},
+                {id:"photos",label:"Has Photos"},
+              ].map(f=>(
+                <button key={f.id} onClick={()=>setSessionFilter(f.id)} style={{
+                  padding:"5px 12px", borderRadius:20, border:`1.5px solid ${sessionFilter===f.id?C.accent:C.border}`,
+                  background:sessionFilter===f.id?C.accentDim:"transparent",
+                  color:sessionFilter===f.id?C.accent:C.muted,
+                  fontSize:11, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+                  {f.label}
+                </button>
+              ))}
+              <select value={sessionSort} onChange={e=>setSessionSort(e.target.value)}
+                style={{ marginLeft:"auto", padding:"5px 10px", borderRadius:20, border:`1px solid ${C.border}`,
+                  background:C.card, color:C.muted, fontSize:11, cursor:"pointer", flexShrink:0 }}>
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="highest">Highest rated</option>
+                <option value="lowest">Lowest rated</option>
+              </select>
+            </div>
+
+            {/* Count */}
+            {(() => {
+              const filtered = sessions
+                .filter(s => {
+                  if (sessionSearch) {
+                    const q = sessionSearch.toLowerCase();
+                    return s.strain?.toLowerCase().includes(q) ||
+                      s.effects?.some(e=>e.toLowerCase().includes(q)) ||
+                      s.notes?.toLowerCase().includes(q) ||
+                      s.brand?.toLowerCase().includes(q) ||
+                      s.flavors?.some(f=>f.toLowerCase().includes(q));
+                  }
+                  return true;
+                })
+                .filter(s => {
+                  if (sessionFilter === "all") return true;
+                  if (sessionFilter === "high") return (s.ratings?.overall||0) >= 8;
+                  if (sessionFilter === "photos") return s.photos?.length > 0;
+                  const st = allStrains.find(x=>x.name===s.strain);
+                  return st?.type?.toLowerCase() === sessionFilter;
+                })
+                .sort((a,b) => {
+                  if (sessionSort === "oldest") return new Date(a.date) - new Date(b.date);
+                  if (sessionSort === "highest") return (b.ratings?.overall||0) - (a.ratings?.overall||0);
+                  if (sessionSort === "lowest") return (a.ratings?.overall||0) - (b.ratings?.overall||0);
+                  return new Date(b.date) - new Date(a.date);
+                });
+              return (
+                <>
+                  <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>
+                    {filtered.length} of {sessions.length} session{sessions.length!==1?"s":""}
+                    {(sessionSearch||sessionFilter!="all") && (
+                      <button onClick={()=>{ setSessionSearch(""); setSessionFilter("all"); }}
+                        style={{ marginLeft:8, fontSize:11, color:C.accent, background:"transparent", border:"none", cursor:"pointer" }}>
+                        Clear filters
+                      </button>
+                    )}
+                  </div>
+                  {filtered.length===0 && (
+                    <div style={{ textAlign:"center", padding:"40px 20px", color:C.muted }}>
+                      <div style={{ fontSize:32, marginBottom:10 }}>🔍</div>
+                      <div style={{ fontSize:13 }}>No sessions match your search</div>
+                    </div>
+                  )}
+                  {sessions.length===0 && (
+                    <div style={{ textAlign:"center", padding:"50px 20px", color:C.muted }}>
+                      <div style={{ fontSize:40, marginBottom:12 }}>📋</div>
+                      <div>No sessions yet</div>
+                    </div>
+                  )}
+                  {filtered.map(s=>{
               const st   = allStrains.find(x=>x.name===s.strain);
               const meth = METHODS.find(m=>m.id===s.method);
               const open = expandedId===s.id;
@@ -1537,7 +1655,9 @@ export default function App() {
                       <div style={{ display:"flex", gap:5, marginBottom:8, flexWrap:"wrap" }}>
                         {s.effects?.map(e=><span key={e} style={{ fontSize:11, padding:"3px 10px", background:C.accentDim, borderRadius:10, color:C.accent }}>{e}</span>)}
                       </div>
-                      {s.notes&&<div style={{ fontSize:12, color:"#4a7a5a", fontStyle:"italic", marginBottom:10 }}>"{s.notes}"</div>}
+                      {s.notes
+                        ? <div style={{ fontSize:12, color:"#8a6a3a", fontStyle:"italic", marginBottom:10 }}>"{s.notes}"</div>
+                        : <div style={{ fontSize:11, color:C.faint, marginBottom:10 }}>No notes logged</div>}
                       <div style={{ display:"flex", gap:8 }}>
                         <button onClick={e=>{ e.stopPropagation(); Sound.play("tap"); setEditingSession(s); }} style={{
                           padding:"7px 14px", borderRadius:8, border:`1px solid ${C.accent}44`,
@@ -1559,6 +1679,9 @@ export default function App() {
                 </div>
               );
             })}
+                </>
+              );
+            })()}
           </div>
         )}
 
@@ -1568,9 +1691,38 @@ export default function App() {
             <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>🛂 Strain Passport</div>
             <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>Your personal strain collection — {strainNames.length} tried</div>
             {strainNames.length===0 ? (
-              <div style={{ textAlign:"center", padding:"50px 20px", color:C.muted }}>
-                <div style={{ fontSize:40, marginBottom:12 }}>🛂</div>
-                <div>Log sessions to build your passport</div>
+              <div style={{ textAlign:"center", padding:"20px 0" }}>
+                <div style={{ background:`linear-gradient(135deg,${C.card},#1a0d02)`, border:`1px solid ${C.accent}33`,
+                  borderRadius:20, padding:"32px 24px", marginBottom:16 }}>
+                  <div style={{ fontSize:56, marginBottom:16 }}>🛂</div>
+                  <div style={{ fontSize:18, fontWeight:700, color:C.accent, marginBottom:8 }}>Your Passport is Empty</div>
+                  <div style={{ fontSize:13, color:C.muted, lineHeight:1.6, marginBottom:20 }}>
+                    Every strain you log gets a passport card — your personal record of effects, ratings, photos and community anecdotes.
+                  </div>
+                  <button onClick={()=>{ Sound.play("select"); setTab("log"); }}
+                    style={{ padding:"12px 28px", borderRadius:50, border:"none", cursor:"pointer",
+                      background:`linear-gradient(135deg,#c2410c,${C.accent})`, color:"#080502",
+                      fontSize:14, fontWeight:700 }}>
+                    Log your first session →
+                  </button>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                  {STRAIN_DB.slice(0,4).map(s=>(
+                    <div key={s.name} style={{ background:C.card, border:`1px solid ${typeColor(s.type)}22`,
+                      borderRadius:14, padding:12, textAlign:"left" }}>
+                      <div style={{ display:"flex", gap:6, alignItems:"center", marginBottom:4 }}>
+                        <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{s.name}</span>
+                        <span style={{ fontSize:9, padding:"1px 6px", background:typeBg(s.type), border:`1px solid ${typeColor(s.type)}`, borderRadius:6, color:typeColor(s.type) }}>{s.type}</span>
+                      </div>
+                      <div style={{ fontSize:10, color:C.muted, marginBottom:6 }}>{s.description}</div>
+                      <button onClick={()=>{ Sound.play("select"); setForm(f=>({...f,strain:s.name})); setStep(1); setTab("log"); }}
+                        style={{ fontSize:10, padding:"4px 10px", borderRadius:8, border:`1px solid ${C.accent}44`,
+                          background:C.accentDim, color:C.accent, cursor:"pointer" }}>
+                        Log this strain →
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               strainNames.map(name=>(
