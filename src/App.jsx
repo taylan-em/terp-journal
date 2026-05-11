@@ -698,7 +698,7 @@ export default function App() {
     try {
       const r = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:600,
+        body:JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:600,
           system:`Cannabis strain database. Return ONLY a raw JSON array, no markdown, no extra text. Up to 4 matching strains. Each object must have exactly: name(string), type("Indica"|"Sativa"|"Hybrid"), thc(number 10-32), cbd(number 0-20), effects(array of 3 strings), flavors(array of 3 strings), description(string max 8 words). Respond with ONLY the JSON array starting with [`,
           messages:[{role:"user",content:`Cannabis strains matching: ${q}`}] })
       });
@@ -744,7 +744,7 @@ export default function App() {
     try {
       const r = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800,
+        body:JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:800,
           system:`You are a cannabis strain expert. Generate 3 authentic-sounding user anecdotes/reviews for the strain given. Return ONLY a raw JSON array of 3 objects, no markdown. Each object: { "user": "anonymous username like DesertFox42", "rating": number 1-5, "review": "2-3 sentence personal experience written in first person, conversational, specific about effects and context", "method": "how they consumed it" }. Make them feel real and varied — different experiences, methods, outcomes.`,
           messages:[{role:"user",content:`Generate reviews for: ${strainName}`}] })
       });
