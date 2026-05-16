@@ -280,7 +280,7 @@ const mkForm = () => ({
   mental:   Object.fromEntries(MENTAL_FACTORS.map(f=>[f.id,0])),
   physicalNotes:"", mentalNotes:"", notes:"",
   brand:"", source:"", date: new Date().toISOString().slice(0,16),
-  intensity:5, photos:[],
+  intensity:5, photos:[], sessionTiming:"after",
 });
 
 // ─── LOGO MARK ────────────────────────────────────────────────────────────────
@@ -608,6 +608,7 @@ export default function App() {
   const [unlockedMilestones, setUnlockedMilestones] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_m")||"[]")}catch{return []} });
 
   const [step,       setStep]       = useState(0);
+  const topRef = useRef(null);
   const [form,       setForm]       = useState(mkForm());
   const [saved,      setSaved]      = useState(false);
   const [editingSession, setEditingSession] = useState(null);
@@ -790,6 +791,41 @@ export default function App() {
 
   const saveEdit = updated => { setSessions(p=>p.map(s=>s.id===updated.id?updated:s)); setEditingSession(null); };
 
+  const [myReviews, setMyReviews] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_reviews")||"{}")}catch{return {}} });
+  const [generatingReview, setGeneratingReview] = useState(null);
+
+  useEffect(()=>{ localStorage.setItem("rs_reviews", JSON.stringify(myReviews)); },[myReviews]);
+
+  const generateMyReview = async (strainName) => {
+    const ss = sessions.filter(s=>s.strain===strainName);
+    if (ss.length < 2) { alert("Log at least 2 sessions with this strain to generate a review."); return; }
+    setGeneratingReview(strainName);
+    const avgOverall = (ss.reduce((a,s)=>a+(s.ratings?.overall||0),0)/ss.length).toFixed(1);
+    const avgTaste   = (ss.reduce((a,s)=>a+(s.ratings?.taste||0),0)/ss.length).toFixed(1);
+    const topEffects = EFFECTS.map(e=>({e,pct:Math.round(ss.filter(s=>s.effects?.includes(e)).length/ss.length*100)}))
+      .filter(x=>x.pct>0).sort((a,b)=>b.pct-a.pct).slice(0,4).map(x=>x.e).join(", ");
+    const topFlavors = [...new Set(ss.flatMap(s=>s.flavors||[]))].slice(0,3).join(", ");
+    const methods    = [...new Set(ss.map(s=>METHODS.find(m=>m.id===s.method)?.label).filter(Boolean))].join(", ");
+    const notes      = ss.filter(s=>s.notes?.length>10).map(s=>s.notes).join(" | ").slice(0,300);
+    try {
+      const r = await fetch("/api/claude", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-haiku-4-5-20251001", max_tokens:300,
+          system:"You write short, honest, personal cannabis strain reviews in first person. 2-3 sentences max. Conversational, specific, no fluff. Based on real session data provided.",
+          messages:[{ role:"user", content:`Write a personal review for ${strainName} based on my data: ${ss.length} sessions, ${avgOverall}/10 avg rating, ${avgTaste}/10 taste, main effects: ${topEffects}, flavours: ${topFlavors}, methods used: ${methods}. My notes: ${notes||"none"}. Write as me, first person, honest and specific.` }]
+        })
+      });
+      const d = await r.json();
+      const text = d.content?.map(b=>b.text||"").join("").trim();
+      if (text) {
+        setMyReviews(prev=>({...prev,[strainName]:{ text, date:new Date().toISOString(), sessions:ss.length, rating:avgOverall }}));
+        Sound.play("unlock");
+      }
+    } catch(e) { alert("Failed to generate review. Try again."); }
+    setGeneratingReview(null);
+  };
+
   const exportJSON = () => {
     const blob = new Blob([JSON.stringify({sessions,custom,profile,exportedAt:new Date().toISOString()},null,2)],{type:"application/json"});
     const url = URL.createObjectURL(blob);
@@ -929,7 +965,7 @@ export default function App() {
             {/* AI anecdotes */}
             <Card style={{ marginTop:12 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                <div style={{ fontSize:13, fontWeight:600, color:C.text }}>💬 Community Anecdotes</div>
+                <div style={{ fontSize:13, fontWeight:600, color:C.text }}>💬 Reviews</div>
                 {!strainAnecdotes[passportStrain] && (
                   <button onClick={()=>loadAnecdotes(passportStrain)} disabled={loadingAnecdotes}
                     style={{ padding:"6px 12px", borderRadius:8, border:`1px solid ${C.accent}44`,
@@ -1149,11 +1185,11 @@ export default function App() {
         {/* ════ LOG ════ */}
         {tab==="log" && (
           <div>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+            <div ref={topRef} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
               <div style={{ fontSize:14, fontWeight:600, color:C.text }}>
                 {["Pick your strain","Method & amount","Mood check","Rate it","Wellbeing"][step]}
               </div>
-              <StepDots current={step} total={5} onGo={s=>{ Sound.play("swipe"); setStep(s); }}/>
+              <StepDots current={step} total={5} onGo={s=>{ Sound.play("swipe"); setStep(s); setTimeout(()=>topRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),50); }}/>
             </div>
             <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>
               {["Search 80+ strains","How and how much?","How are you feeling?","Score the experience","Track health effects (optional)"][step]}
@@ -1367,6 +1403,19 @@ export default function App() {
                 </Card>
                 <Card style={{ marginTop:12 }}>
                   <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>DATE & TIME</div>
+                  <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+                    {[
+                      { label:"Now",        val:()=>new Date().toISOString().slice(0,16) },
+                      { label:"30 min ago",  val:()=>new Date(Date.now()-30*60000).toISOString().slice(0,16) },
+                      { label:"1 hour ago",  val:()=>new Date(Date.now()-60*60000).toISOString().slice(0,16) },
+                    ].map(t=>(
+                      <button key={t.label} onClick={()=>setForm(f=>({...f,date:t.val()}))}
+                        style={{ flex:1, padding:"8px 4px", borderRadius:8, border:`1px solid ${C.border}`,
+                          background:C.faint, color:C.text, cursor:"pointer", fontSize:11, fontFamily:"system-ui" }}>
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
                   <input type="datetime-local" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}
                     style={{ width:"100%", padding:"10px 12px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:10, color:C.text, fontSize:12, boxSizing:"border-box" }}/>
                 </Card>
@@ -1376,22 +1425,79 @@ export default function App() {
             {/* STEP 2: MOOD */}
             {step===2 && (
               <div>
-                {[["How are you feeling RIGHT NOW?","moodBefore"],["How do you expect to feel?","moodAfter"]].map(([lbl,key])=>(
-                  <div key={key} style={{ marginBottom:24 }}>
-                    <div style={{ fontSize:14, fontWeight:600, color:C.text, marginBottom:12 }}>{lbl}</div>
+                {/* Timing question — determines mood context */}
+                <Card style={{ marginBottom:20, background:`linear-gradient(135deg,${C.card},#1a0d02)`, border:`1px solid ${C.accent}22` }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:12 }}>When are you logging this?</div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    {[
+                      { id:"before",  label:"Before session",   icon:"⏱️",  desc:"Haven't consumed yet" },
+                      { id:"during",  label:"Just smoked",      icon:"🌿",  desc:"In the first few minutes" },
+                      { id:"after",   label:"20+ mins in",      icon:"🧠",  desc:"Effects fully kicked in" },
+                    ].map(t=>(
+                      <button key={t.id} onClick={()=>setForm(f=>({...f,sessionTiming:t.id}))}
+                        style={{ flex:1, padding:"10px 6px", borderRadius:12,
+                          border:`2px solid ${form.sessionTiming===t.id?C.accent:C.border}`,
+                          background:form.sessionTiming===t.id?C.accentDim:C.card,
+                          cursor:"pointer", textAlign:"center", transition:"all 0.15s" }}>
+                        <div style={{ fontSize:20, marginBottom:4 }}>{t.icon}</div>
+                        <div style={{ fontSize:11, fontWeight:form.sessionTiming===t.id?700:400, color:form.sessionTiming===t.id?C.accent:C.text, marginBottom:2 }}>{t.label}</div>
+                        <div style={{ fontSize:9, color:C.muted }}>{t.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </Card>
+
+                {/* Mood before — always shown */}
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:4 }}>
+                    {form.sessionTiming==="before" ? "How are you feeling right now?"
+                      : form.sessionTiming==="after" ? "How were you feeling before?"
+                      : "How are you feeling right now?"}
+                  </div>
+                  <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>Your baseline before cannabis</div>
+                  <div style={{ display:"flex", gap:6 }}>
+                    {MOODS.map((m,i)=>(
+                      <button key={i} onClick={()=>{ Sound.play("tap"); setForm(f=>({...f,moodBefore:i})); }} style={{
+                        flex:1, padding:"10px 4px", borderRadius:12,
+                        border:`2px solid ${form.moodBefore===i?C.amber:C.border}`,
+                        background:form.moodBefore===i?"#2a1f00":C.card, cursor:"pointer", textAlign:"center" }}>
+                        <div style={{ fontSize:24, marginBottom:2 }}>{m}</div>
+                        <div style={{ fontSize:9, color:form.moodBefore===i?C.amber:C.muted }}>{MOOD_LABELS[i]}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mood after — only shown if they've already consumed */}
+                {(form.sessionTiming==="during" || form.sessionTiming==="after") && (
+                  <div style={{ marginBottom:20 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:4 }}>
+                      {form.sessionTiming==="after" ? "How are you feeling NOW?" : "Any noticeable shift yet?"}
+                    </div>
+                    <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>
+                      {form.sessionTiming==="after" ? "Effects fully in" : "Early onset feelings"}
+                    </div>
                     <div style={{ display:"flex", gap:6 }}>
                       {MOODS.map((m,i)=>(
-                        <button key={i} onClick={()=>{ Sound.play("tap"); setForm(f=>({...f,[key]:i})); }} style={{
+                        <button key={i} onClick={()=>{ Sound.play("tap"); setForm(f=>({...f,moodAfter:i})); }} style={{
                           flex:1, padding:"10px 4px", borderRadius:12,
-                          border:`2px solid ${form[key]===i?C.amber:C.border}`,
-                          background:form[key]===i?"#2a1f00":C.card, cursor:"pointer", textAlign:"center" }}>
+                          border:`2px solid ${form.moodAfter===i?C.amber:C.border}`,
+                          background:form.moodAfter===i?"#2a1f00":C.card, cursor:"pointer", textAlign:"center" }}>
                           <div style={{ fontSize:24, marginBottom:2 }}>{m}</div>
-                          <div style={{ fontSize:9, color:form[key]===i?C.amber:C.muted }}>{MOOD_LABELS[i]}</div>
+                          <div style={{ fontSize:9, color:form.moodAfter===i?C.amber:C.muted }}>{MOOD_LABELS[i]}</div>
                         </button>
                       ))}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* If before session — skip mood after, show helpful note */}
+                {form.sessionTiming==="before" && (
+                  <div style={{ padding:"10px 14px", background:C.faint, borderRadius:10, marginBottom:16, fontSize:12, color:C.muted }}>
+                    💡 Come back after your session to log how you felt — or log it now and edit later
+                  </div>
+                )}
+
                 <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}
                   placeholder="Setting, context, what you're doing... (+3 XP for detailed notes)"
                   rows={3} style={{ width:"100%", padding:"12px", background:C.card, border:`1px solid ${C.border}`,
@@ -1486,14 +1592,14 @@ export default function App() {
             {/* Wizard nav */}
             <div style={{ display:"flex", gap:10, marginTop:20 }}>
               {step>0 && (
-                <button onClick={()=>{ Sound.play("swipe"); setStep(s=>s-1); }} style={{
+                <button onClick={()=>{ Sound.play("swipe"); setStep(s=>s-1); setTimeout(()=>topRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),50); }} style={{
                   flex:1, padding:"14px", borderRadius:14, border:`1.5px solid ${C.border}`,
                   background:"transparent", color:C.muted, cursor:"pointer", fontSize:14, fontWeight:600 }}>
                   ← Back
                 </button>
               )}
               {step<4 ? (
-                <button onClick={()=>{ Sound.play("swipe"); setStep(s=>s+1); }} disabled={step===0&&!form.strain}
+                <button onClick={()=>{ Sound.play("swipe"); setStep(s=>s+1); setTimeout(()=>topRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),50); }} disabled={step===0&&!form.strain}
                   style={{ flex:2, padding:"14px", borderRadius:14, border:"none",
                     cursor:step===0&&!form.strain?"not-allowed":"pointer",
                     background:step===0&&!form.strain?C.faint:`linear-gradient(135deg,#2a6a0a,${C.accent})`,
