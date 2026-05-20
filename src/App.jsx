@@ -45,6 +45,11 @@ export default function App() {
   const [anecdoteError, setAnecdoteError] = useState(false);
   const [showPhotoTips, setShowPhotoTips] = useState(false);
   const [generatingReview, setGeneratingReview] = useState(null);
+  
+  // ── Stash + T-break state ──
+  const [stash, setStash] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_stash")||"[]")}catch{return []} });
+  const [breakActive, setBreakActive] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_break_active")||"false")}catch{return false} });
+  const [breakStart, setBreakStart] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_break_start")||"null")}catch{return null} });
 
   const prevXP = useRef(0);
 
@@ -54,6 +59,9 @@ export default function App() {
   useEffect(()=>{ localStorage.setItem("rs_p", JSON.stringify(profile));  },[profile]);
   useEffect(()=>{ localStorage.setItem("rs_m", JSON.stringify(unlockedMilestones)); },[unlockedMilestones]);
   useEffect(()=>{ localStorage.setItem("rs_reviews", JSON.stringify(myReviews)); },[myReviews]);
+  useEffect(()=>{ localStorage.setItem("rs_stash", JSON.stringify(stash)); },[stash]);
+  useEffect(()=>{ localStorage.setItem("rs_break_active", JSON.stringify(breakActive)); },[breakActive]);
+  useEffect(()=>{ localStorage.setItem("rs_break_start", JSON.stringify(breakStart)); },[breakStart]);
 
   // ── Derived data ───────────────────────────────────────────────────────
   const allStrains = useMemo(()=>[...STRAIN_DB, ...custom.filter(c=>!STRAIN_DB.find(d=>d.name.toLowerCase()===c.name.toLowerCase()))], [custom]);
@@ -170,10 +178,35 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [sessions]);
 
+  // ── Stash handlers ──
+  const addStashItem = useCallback((item) => {
+    setStash(p => [...p, item]);
+  }, []);
+
+  const editStashItem = useCallback((item) => {
+    setStash(p => p.map(i => i.id === item.id ? item : i));
+  }, []);
+
+  const deleteStashItem = useCallback((id) => {
+    setStash(p => p.filter(i => i.id !== id));
+  }, []);
+
+  const startBreak = useCallback(() => {
+    Sound.play("select");
+    setBreakActive(true);
+    setBreakStart(Date.now());
+  }, []);
+
+  const endBreak = useCallback(() => {
+    Sound.play("tap");
+    setBreakActive(false);
+    setBreakStart(null);
+  }, []);
+
   const importJSON = useCallback((e) => {
     const file=e.target.files[0]; if(!file) return;
     const reader=new FileReader();
-    reader.onload=ev=>{ try{ const d=JSON.parse(ev.target.result); if(d.sessions) setSessions(d.sessions); if(d.custom) setCustom(d.custom); if(d.profile) setProfile(d.profile); alert("Restored!"); }catch{ alert("Invalid file."); } };
+    reader.onload=ev=>{ try{ const d=JSON.parse(ev.target.result); if(d.sessions) setSessions(d.sessions); if(d.custom) setCustom(d.custom); if(d.profile) setProfile(d.profile); if(d.stash) setStash(d.stash); if(d.breakActive!==undefined) setBreakActive(d.breakActive); if(d.breakStart!==undefined) setBreakStart(d.breakStart); if(d.myReviews) setMyReviews(d.myReviews); alert("Restored!"); }catch{ alert("Invalid file."); } };
     reader.readAsText(file);
   }, []);
 
@@ -320,7 +353,16 @@ export default function App() {
             onExportJSON={exportJSON}
             onExportCSV={exportCSV}
             onImportJSON={importJSON}
-            onRedoQuiz={()=>{ localStorage.removeItem("rs_p"); setProfile(null); setQuizStep(0); setQuizAnswers({}); }} />
+            onRedoQuiz={()=>{ localStorage.removeItem("rs_p"); setProfile(null); setQuizStep(0); setQuizAnswers({}); }}
+            stash={stash}
+            onAddStash={addStashItem}
+            onEditStash={editStashItem}
+            onDeleteStash={deleteStashItem}
+            sessions={sessions}
+            breakActive={breakActive}
+            breakStart={breakStart}
+            onStartBreak={startBreak}
+            onEndBreak={endBreak} />
         );
       default:
         return null;
