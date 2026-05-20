@@ -43,7 +43,7 @@ export const mkForm = () => ({
   mental:   Object.fromEntries(MENTAL_FACTORS.map(f=>[f.id,0])),
   physicalNotes:"", mentalNotes:"", notes:"",
   brand:"", source:"", date: new Date().toISOString().slice(0,16),
-  intensity:5, photos:[], sessionTiming:"after",
+  intensity:5, photos:[], sessionTiming:"after", medical:[],
 });
 
 export const calcStreak = (sess) => {
