@@ -407,8 +407,8 @@ export default function MoreScreen({ xp, rank, profile, unlockedMilestones, earn
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 10 }}>
           <LogoMark size={40} />
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.accent }}>Resin</div>
-            <div style={{ fontSize: 11, color: C.muted }}>Cannabis Experience Log · v2.0</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.accent }}>About</div>
+            <div style={{ fontSize: 11, color: C.muted }}>v2.0 — your data stays on device</div>
           </div>
         </div>
         <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>

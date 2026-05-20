@@ -244,11 +244,8 @@ export default function App() {
         backdropFilter:"blur(12px)", borderBottom:`1px solid ${C.border}`,
         padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <LogoMark size={32}/>
-          <div>
-            <div style={{ fontSize:15, fontWeight:800, color:C.accent }}>Resin</div>
-            <div style={{ fontSize:10, color:rank.color }}>{rank.icon} {rank.title}</div>
-          </div>
+          <LogoMark size={26}/>
+          <div style={{ fontSize:10, color:rank.color, fontWeight:600 }}>{rank.icon} {rank.title}</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {streak>0&&<div style={{ background:"#f59e0b22", border:`1px solid ${C.amber}44`, borderRadius:20, padding:"4px 10px", fontSize:12, color:C.amber }}>🔥{streak}d</div>}

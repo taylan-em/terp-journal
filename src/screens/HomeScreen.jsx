@@ -76,7 +76,7 @@ const HomeScreen = ({ sessions, custom, allStrains, profile, unlockedMilestones,
         <div style={{ position:"relative", zIndex:1, textAlign:"center", padding:"0 20px" }}>
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:8 }}>
             <LogoMark size={80}/>
-            <div style={{ fontSize:32, fontWeight:800, color:C.accent, marginTop:14, letterSpacing:"-0.5px" }}>Resin</div>
+            <div style={{ fontSize:32, fontWeight:800, color:C.accent, marginTop:14, letterSpacing:"-0.5px" }}>Terp Journal</div>
             <div style={{ width:40, height:2, background:C.accent, borderRadius:1, marginTop:6, opacity:0.4 }}/>
           </div>
           <div style={{ fontSize:15, color:C.muted, lineHeight:1.6, marginBottom:8 }}>Track your cannabis. Discover what works.</div>

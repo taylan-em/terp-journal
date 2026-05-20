@@ -34,7 +34,7 @@ const OnboardingFlow = ({ quizAnswers, setQuizAnswers, quizStep, setQuizStep, se
         <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:28 }}>
           <LogoMark size={40}/>
           <div>
-            <div style={{ fontSize:20, fontWeight:800, color:C.accent }}>Welcome to Resin</div>
+            <div style={{ fontSize:20, fontWeight:800, color:C.accent }}>Welcome</div>
             <div style={{ fontSize:12, color:C.muted }}>Quick setup — takes 30 seconds</div>
           </div>
         </div>
