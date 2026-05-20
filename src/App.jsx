@@ -20,10 +20,20 @@ import StrainPassportModal from "./overlays/StrainPassportModal";
 import EditSessionModal from "./overlays/EditSessionModal";
 import PhotoTips from "./overlays/PhotoTips";
 import SavedFlash from "./overlays/SavedFlash";
+import ErrorBoundary from "./components/ErrorBoundary";
 import UnlockPremiumModal from "./overlays/UnlockPremiumModal";
 import { isUnlocked } from "./lib/license";
 
 export default function App() {
+  try {
+    return <AppInner />;
+  } catch (e) {
+    console.error("App crash:", e);
+    return <div>App crash</div>;
+  }
+}
+
+function AppInner() {
   // ── Persisted state ────────────────────────────────────────────────────
   const [tab,        setTab]        = useState("home");
   const [sessions,   setSessions]   = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_s")||"[]")}catch{return []} });
@@ -319,7 +329,7 @@ export default function App() {
         );
       case "log":
         return (
-          <LogScreen
+          <ErrorBoundary><LogScreen
             sessions={sessions} custom={custom} setCustom={setCustom}
             allStrains={allStrains} profile={profile}
             step={step} setStep={setStep}
@@ -327,7 +337,7 @@ export default function App() {
             onSave={saveSession}
             setShowPhotoTips={setShowPhotoTips}
             setPassportStrain={setPassportStrain}
-            loadAnecdotes={loadAnecdotes} />
+            loadAnecdotes={loadAnecdotes} /></ErrorBoundary>
         );
       case "sessions":
         return (
