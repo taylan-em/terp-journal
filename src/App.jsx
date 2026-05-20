@@ -20,6 +20,8 @@ import StrainPassportModal from "./overlays/StrainPassportModal";
 import EditSessionModal from "./overlays/EditSessionModal";
 import PhotoTips from "./overlays/PhotoTips";
 import SavedFlash from "./overlays/SavedFlash";
+import UnlockPremiumModal from "./overlays/UnlockPremiumModal";
+import { isUnlocked } from "./lib/license";
 
 export default function App() {
   // ── Persisted state ────────────────────────────────────────────────────
@@ -50,6 +52,8 @@ export default function App() {
   const [stash, setStash] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_stash")||"[]")}catch{return []} });
   const [breakActive, setBreakActive] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_break_active")||"false")}catch{return false} });
   const [breakStart, setBreakStart] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_break_start")||"null")}catch{return null} });
+  const [premium, setPremium] = useState(isUnlocked);
+  const [showUnlock, setShowUnlock] = useState(false);
 
   const prevXP = useRef(0);
 
@@ -362,10 +366,23 @@ export default function App() {
             breakActive={breakActive}
             breakStart={breakStart}
             onStartBreak={startBreak}
-            onEndBreak={endBreak} />
+            onEndBreak={endBreak}
+            premium={premium}
+            onUnlockClick={()=>setShowUnlock(true)} />
         );
       default:
         return null;
     }
+  }
+  // ── Unlock overlay ──
+  if (showUnlock) {
+    return (
+      <>
+        <div>{renderScreen()}</div>
+        <UnlockPremiumModal
+          onClose={()=>setShowUnlock(false)}
+          onUnlocked={()=>{ setPremium(true); setShowUnlock(false); }} />
+      </>
+    );
   }
 }

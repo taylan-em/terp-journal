@@ -213,7 +213,7 @@ function StashForm({ initial, onSave, onCancel, existingStrains }) {
 
 // ── Main MoreScreen ────────────────────────────────────────────────────────
 export default function MoreScreen({ xp, rank, profile, unlockedMilestones, earnedMilestones,
-  onExportJSON, onExportCSV, onImportJSON, onRedoQuiz,
+  onExportJSON, onExportCSV, onImportJSON, onRedoQuiz, premium, onUnlockClick,
   stash, onAddStash, onEditStash, onDeleteStash,
   sessions, breakActive, breakStart, onStartBreak, onEndBreak }) {
 
@@ -316,6 +316,24 @@ export default function MoreScreen({ xp, rank, profile, unlockedMilestones, earn
         stash={stash} sessions={sessions}
         onStartBreak={onStartBreak} breakActive={breakActive} breakStart={breakStart}
         onEndBreak={onEndBreak} />
+
+      {/* ── Premium unlock ── */}
+      {!premium && (
+        <Card style={{ marginBottom: 14, border: `1px solid ${C.accent}33`, background: "linear-gradient(135deg,#1a0f00,#0f0a04)" }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <div style={{ fontSize: 28 }}>✨</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.accent, marginBottom: 2 }}>Resin Premium</div>
+              <div style={{ fontSize: 11, color: C.muted }}>AI Review Generator + Advanced Analytics</div>
+            </div>
+            <button onClick={onUnlockClick} style={{
+              padding: "10px 20px", borderRadius: 20, border: "none", cursor: "pointer",
+              background: `linear-gradient(135deg,#c2410c,${C.accent})`, color: "#080502",
+              fontSize: 12, fontWeight: 700, whiteSpace: "nowrap"
+            }}>Unlock $4.99</button>
+          </div>
+        </Card>
+      )}
 
       {/* ── Rank card ── */}
       <Card style={{ marginBottom: 14, background: `linear-gradient(135deg,${C.card},#0d2a10)`, border: `1px solid ${rank.color}33` }}>
