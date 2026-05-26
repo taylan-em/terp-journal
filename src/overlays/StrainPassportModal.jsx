@@ -64,7 +64,7 @@ const PassportCard = ({ strain, sessions, allStrains }) => {
   );
 };
 
-const StrainPassportModal = ({ strain, sessions, allStrains, strainAnecdotes, loadingAnecdotes, anecdoteError, onLoadAnecdotes, onClose }) => {
+const StrainPassportModal = ({ strain, sessions, allStrains, strainAnecdotes, loadingAnecdotes, anecdoteError, onLoadAnecdotes, onClose, premium, myReviews={}, generatingReview=null, onGenerateReview }) => {
   const passportStrain = strain;
   return (
     <div style={{ position:"fixed", inset:0, zIndex:150, background:"rgba(8,15,9,0.96)", overflowY:"auto", padding:20 }}>
@@ -109,6 +109,46 @@ const StrainPassportModal = ({ strain, sessions, allStrains, strainAnecdotes, lo
                   <button onClick={()=>onLoadAnecdotes(passportStrain)} style={{ padding:"6px 14px", borderRadius:8, border:"1px solid #f8717144", background:"transparent", color:"#f87171", cursor:"pointer", fontSize:12 }}>Try again</button>
                 </div>
               ) : "Tap 'Load reviews' to see community anecdotes"}
+            </div>
+          )}
+        </Card>
+
+        {/* Personal AI review */}
+        <Card style={{ marginTop:12 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div style={{ fontSize:13, fontWeight:600, color:C.text }}>🤖 Your AI Review</div>
+            {myReviews[passportStrain] ? (
+              <button onClick={()=>onGenerateReview(passportStrain)} disabled={generatingReview===passportStrain}
+                style={{ padding:"6px 12px", borderRadius:8, border:`1px solid ${C.accent}44`,
+                  background:C.accentDim, color:C.accent, cursor:"pointer", fontSize:12, opacity:generatingReview===passportStrain?0.6:1 }}>
+                {generatingReview===passportStrain?"Generating...":"Regenerate"}
+              </button>
+            ) : (
+              <button onClick={()=>onGenerateReview(passportStrain)} disabled={generatingReview===passportStrain}
+                style={{ padding:"6px 12px", borderRadius:8, border:`1px solid ${C.accent}44`,
+                  background:C.accentDim, color:C.accent, cursor:"pointer", fontSize:12, opacity:generatingReview===passportStrain?0.6:1 }}>
+                {generatingReview===passportStrain?"Generating...":(premium?"Generate my review":"Unlock Premium")}
+              </button>
+            )}
+          </div>
+          {myReviews[passportStrain] ? (
+            <div>
+              <div style={{ background:"#160900", borderRadius:12, padding:12, marginBottom:8 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                  <span style={{ fontSize:12, fontWeight:600, color:C.accent }}>@{passportStrain}</span>
+                  <span style={{ fontSize:11, color:C.amber }}>{"⭐".repeat(Math.round(myReviews[passportStrain].rating))}</span>
+                </div>
+                <div style={{ fontSize:13, color:C.text, lineHeight:1.5, marginBottom:4 }}>{myReviews[passportStrain].text}</div>
+                <div style={{ fontSize:11, color:C.muted }}>Based on {myReviews[passportStrain].sessions} sessions</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize:12, color:C.muted, textAlign:"center", padding:"12px 0" }}>
+              {generatingReview===passportStrain ? (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"12px 0", fontSize:12, color:C.muted }}>
+                  <span style={{ fontSize:18, animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</span> Crafting your review…
+                </div>
+              ) : (premium ? "Tap 'Generate my review' for an AI-crafted personal review based on your sessions" : "Unlock Premium to generate AI-powered personal strain reviews")}
             </div>
           )}
         </Card>

@@ -146,6 +146,7 @@ function AppInner() {
   }, [strainAnecdotes]);
 
   const generateMyReview = useCallback(async (strainName) => {
+    if (!premium) { setShowUnlock(true); return; }
     const ss = sessions.filter(s=>s.strain===strainName);
     if (ss.length < 2) { alert("Log at least 2 sessions with this strain to generate a review."); return; }
     setGeneratingReview(strainName);
@@ -278,7 +279,9 @@ function AppInner() {
         <StrainPassportModal
           strain={passportStrain} sessions={sessions} allStrains={allStrains}
           strainAnecdotes={strainAnecdotes} loadingAnecdotes={loadingAnecdotes}
-          anecdoteError={anecdoteError}
+          anecdoteError={anecdoteError} premium={premium}
+          myReviews={myReviews} generatingReview={generatingReview}
+          onGenerateReview={generateMyReview}
           onLoadAnecdotes={loadAnecdotes}
           onClose={()=>setPassportStrain(null)} />
       )}
