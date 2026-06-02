@@ -1,11 +1,11 @@
 {
-  "name": "Resin",
+  "name": "Resin — Cannabis Experience Log",
   "short_name": "Resin",
-  "description": "Cannabis experience log",
+  "description": "Log. Learn. Optimize. The cannabis experience journal that builds your perfect profile.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0c0905",
-  "theme_color": "#f97316",
+  "theme_color": "#0c0905",
   "icons": [
     {
       "src": "/icon-512.png",
