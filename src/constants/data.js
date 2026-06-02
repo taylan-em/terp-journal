@@ -38,5 +38,22 @@ export const STRAIN_DB = [
   { name:"Papaya",              type:"Indica", thc:25, cbd:0,  effects:["Relaxed","Happy","Sleepy"],     flavors:["Tropical","Mango","Sweet"], description:"Tropical. Deeply calming." },
   { name:"Crescendo",           type:"Hybrid", thc:32, cbd:0,  effects:["Euphoric","Relaxed","Creative"],flavors:["Diesel","Sweet","Earthy"],  description:"Extremely potent." },
   { name:"Sunset Sherbet",      type:"Hybrid", thc:21, cbd:0,  effects:["Happy","Relaxed","Creative"],   flavors:["Sweet","Berry","Citrus"],   description:"Fruity, balanced buzz." },
-  { name:"Gary Payton",         type:"Hybrid", thc:25, cbd:0,  effects:["Euphoric","Focused","Happy"],   flavors:["Earthy","Pepper","Sweet"],  description:"Peppery, cerebral." },
+  { name:"Gary Payton",         type:"Hybrid", thc:25, cbd:0,  effects:["Euphoric","Focused","Happy"],     flavors:["Earthy","Pepper","Sweet"],  description:"Peppery, cerebral." },
+
+  // ── Australian medical strains ──────────────────────────────────────────
+  { name:"Topaz T25",           type:"Indica", thc:25, cbd:0,  effects:["Relaxed","Sleepy","Euphoric"],     flavors:["Earthy","Garlic","Diesel"],  description:"Kush Cookies. Heavy indica for sleep & pain." },
+  { name:"ANTG Rocky",          type:"Indica", thc:30, cbd:0,  effects:["Relaxed","Sleepy","Euphoric"],     flavors:["Earthy","Pine","Woody"],     description:"El Jefe. Australian-grown medical heavyweight." },
+  { name:"ANTG Solace",         type:"Sativa", thc:22, cbd:0,  effects:["Energetic","Happy","Focused"],     flavors:["Citrus","Earthy","Pine"],     description:"Tangie Chem. Daytime medical strain." },
+  { name:"ANTG Mariposa",       type:"Sativa", thc:18, cbd:0,  effects:["Happy","Creative","Focused"],      flavors:["Sweet","Earthy","Citrus"],     description:"OG Kush. Gentle daytime flower." },
+  { name:"Beacon GSC",          type:"Hybrid", thc:22, cbd:0,  effects:["Euphoric","Relaxed","Happy"],      flavors:["Sweet","Earthy","Mint"],       description:"Girl Scout Cookies. Popular clinic script." },
+  { name:"Beacon Pink Kush",    type:"Indica", thc:25, cbd:0,  effects:["Relaxed","Sleepy","Euphoric"],     flavors:["Sweet","Earthy","Vanilla"],    description:"Barney's Farm. Canadian import." },
+  { name:"Medcan CC01",         type:"Indica", thc:22, cbd:0,  effects:["Relaxed","Sleepy","Euphoric"],     flavors:["Earthy","Woody","Spice"],      description:"Cold Creek Kush. Afghan Kush x Chemdawg." },
+  { name:"Cannatrek T20 Daylesford", type:"Indica", thc:20, cbd:0, effects:["Relaxed","Happy","Euphoric"],flavors:["Earthy","Sweet","Berry"],      description:"Death Bubba. Relaxing body stone." },
+  { name:"Kind Stella",         type:"Indica", thc:18, cbd:1,  effects:["Relaxed","Calm","Focused"],        flavors:["Earthy","Sweet","Berry"],      description:"Death Bubba. Balanced medical strain." },
+  { name:"SatiVite Lemon Haze", type:"Sativa", thc:22, cbd:0,  effects:["Energetic","Happy","Creative"],    flavors:["Lemon","Citrus","Sweet"],       description:"Super Lemon Haze. Uplifting daytime." },
+  { name:"Tweed Bakerstreet",   type:"Indica", thc:20, cbd:0,  effects:["Relaxed","Sleepy","Happy"],        flavors:["Earthy","Sweet","Spice"],       description:"Hindu Kush. Classic sedating indica." },
+  { name:"Spectrum Red No 1",   type:"Indica", thc:22, cbd:0,  effects:["Relaxed","Sleepy","Euphoric"],     flavors:["Earthy","Pine","Woody"],        description:"Pink Kush. Premium medical grade." },
+  { name:"Althea THC25",        type:"Hybrid", thc:25, cbd:0,  effects:["Relaxed","Euphoric","Happy"],      flavors:["Earthy","Sweet","Citrus"],      description:"Rocky. Canadian import. Pain management." },
+  { name:"Tilray THC25",        type:"Indica", thc:25, cbd:0,  effects:["Relaxed","Sleepy","Euphoric"],     flavors:["Earthy","Woody","Pine"],        description:"Master Kush. German medical import." },
+  { name:"Adaya 26",            type:"Hybrid", thc:26, cbd:0,  effects:["Relaxed","Euphoric","Happy"],      flavors:["Earthy","Sweet","Diesel"],      description:"Gelato 33. High THC medical." },
 ];

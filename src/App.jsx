@@ -13,6 +13,7 @@ import LogScreen from "./screens/LogScreen";
 import SessionsScreen from "./screens/SessionsScreen";
 import PassportScreen from "./screens/PassportScreen";
 import MoreScreen from "./screens/MoreScreen";
+import CommunityScreen from "./screens/CommunityScreen";
 import OnboardingFlow from "./onboarding/OnboardingFlow";
 import MilestoneToast from "./overlays/MilestoneToast";
 import LevelUpOverlay from "./overlays/LevelUpOverlay";
@@ -22,7 +23,18 @@ import PhotoTips from "./overlays/PhotoTips";
 import SavedFlash from "./overlays/SavedFlash";
 import ErrorBoundary from "./components/ErrorBoundary";
 import UnlockPremiumModal from "./overlays/UnlockPremiumModal";
+import FeedbackModal from "./overlays/FeedbackModal";
 import { isUnlocked } from "./lib/license";
+import { useInstallPrompt, InstallBanner, OfflineIndicator } from "./lib/pwa.jsx";
+import { CameraCapture, StrainPhotoGallery, addStrainPhoto } from "./lib/photos.jsx";
+let _supabaseConfigured = null;
+function checkSupabase() {
+  if (_supabaseConfigured !== null) return _supabaseConfigured;
+  const url = import.meta.env.VITE_SUPABASE_URL || "";
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+  _supabaseConfigured = url && !url.includes("YOUR_PROJECT") && key && key !== "your-anon-key";
+  return _supabaseConfigured;
+}
 
 export default function App() {
   try {
@@ -64,6 +76,16 @@ function AppInner() {
   const [breakStart, setBreakStart] = useState(()=>{ try{return JSON.parse(localStorage.getItem("rs_break_start")||"null")}catch{return null} });
   const [premium, setPremium] = useState(isUnlocked);
   const [showUnlock, setShowUnlock] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  
+  // ── Auth ──
+  const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [showSocialReview, setShowSocialReview] = useState(false);
+  const [socialReviewData, setSocialReviewData] = useState(null);
+  const [showCamera, setShowCamera] = useState(null); // strain name when open
+  const [showGallery, setShowGallery] = useState(null); // strain name when open
 
   const prevXP = useRef(0);
 
@@ -121,6 +143,15 @@ function AppInner() {
 
   const deleteSession = useCallback((id) => {
     setSessions(p=>p.filter(x=>x.id!==id));
+  }, []);
+
+  const undoDeleteSession = useCallback((session) => {
+    // Re-insert the session at its original position (by date)
+    setSessions(p => {
+      const restored = [...p, session];
+      restored.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return restored;
+    });
   }, []);
 
   const loadAnecdotes = useCallback(async (strainName) => {
@@ -231,6 +262,25 @@ function AppInner() {
     loadAnecdotes(strainName);
   }, [loadAnecdotes]);
 
+  const openSocialReview = useCallback((strainName) => {
+    const strain = allStrains.find(s => s.name === strainName);
+    const _sessions = sessions.filter(s => s.strain === strainName);
+    if (!strain || _sessions.length === 0) return;
+    setSocialReviewData({ strain, sessions: _sessions });
+    setShowSocialReview(true);
+  }, [allStrains, sessions]);
+
+  const openShareStats = useCallback(async (xpVal, rankVal, totalSess, sessList) => {
+    const { renderStatsCard, shareImage } = await import("./lib/sharecard");
+    const topStrain = sessList?.reduce((a, s) => {
+      a[s.strain] = (a[s.strain] || 0) + 1;
+      return a;
+    }, {});
+    const top = Object.entries(topStrain || {}).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+    const dataUrl = await renderStatsCard(xpVal, rankVal, totalSess, top, streak, stash?.reduce((a, i) => a + (i?.grams || 0), 0) || 0);
+    shareImage(dataUrl, "resin-stats");
+  }, [streak, stash]);
+
   // ── Onboarding ─────────────────────────────────────────────────────────
   if (!profile) {
     return (
@@ -247,9 +297,49 @@ function AppInner() {
     );
   }
 
+  // ── Auth gate (after onboarding, before main app) ──────────────────────
+  // On first launch after onboarding, offer sign-in. Can be skipped.
+  const authSkipped = useRef(false);
+
+  useEffect(() => {
+    if (!profile || authChecked || authSkipped.current || !checkSupabase()) {
+      if (!checkSupabase()) setAuthChecked(true); // No keys = skip auth
+      return;
+    }
+    import("./lib/supabase").then(({ getSession }) => {
+      getSession().then(({ data }) => {
+        if (data?.session?.user) setUser(data.session.user);
+        setShowAuth(!data?.session?.user);
+        setAuthChecked(true);
+      }).catch(() => { setAuthChecked(true); setShowAuth(true); });
+    }).catch(() => { setAuthChecked(true); });
+  }, [profile, authChecked]);
+
+  if (profile && !authChecked && checkSupabase()) {
+    return <div style={{ minHeight:"100vh", maxWidth:500, margin:"0 auto", background:C.bg, color:C.text, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"system-ui,sans-serif" }}><div>Loading...</div></div>;
+  }
+
+  if (profile && showAuth && authChecked) {
+    return (
+      <AuthScreen
+        onAuthenticated={(u) => { setUser(u); setShowAuth(false); }}
+        onSkip={() => { authSkipped.current = true; setShowAuth(false); }}
+      />
+    );
+  }
+
+  // ── PWA hooks ──────────────────────────────────────────────────────────
+  const { canInstall, install: doInstall } = useInstallPrompt();
+  const [installDismissed, setInstallDismissed] = useState(false);
+
   // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight:"100vh", maxWidth:500, margin:"0 auto", background:C.bg, color:C.text, fontFamily:"system-ui,-apple-system,sans-serif" }}>
+      <OfflineIndicator />
+      {canInstall && !installDismissed && (
+        <InstallBanner onInstall={doInstall} onDismiss={() => setInstallDismissed(true)} />
+      )}
+      
       {/* Header */}
       <header style={{ position:"sticky", top:0, zIndex:50, background:C.bg+"f5",
         backdropFilter:"blur(12px)", borderBottom:`1px solid ${C.border}`,
@@ -282,8 +372,11 @@ function AppInner() {
           anecdoteError={anecdoteError} premium={premium}
           myReviews={myReviews} generatingReview={generatingReview}
           onGenerateReview={generateMyReview}
+          onShareReview={openSocialReview}
           onLoadAnecdotes={loadAnecdotes}
-          onClose={()=>setPassportStrain(null)} />
+          onClose={()=>setPassportStrain(null)}
+          onOpenCamera={(name) => setShowCamera(name)}
+          onOpenGallery={(name) => setShowGallery(name)} />
       )}
       {editingSession && (
         <EditSessionModal
@@ -292,6 +385,16 @@ function AppInner() {
           allStrains={allStrains} />
       )}
       {showPhotoTips && <PhotoTips onClose={()=>setShowPhotoTips(false)} />}
+      {showCamera && (
+        <CameraCapture
+          onCapture={(dataUrl) => { addStrainPhoto(showCamera, dataUrl); }}
+          onClose={() => setShowCamera(null)} />
+      )}
+      {showGallery && (
+        <StrainPhotoGallery
+          strainName={showGallery}
+          onClose={() => setShowGallery(null)} />
+      )}
 
       <style>{`
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -348,7 +451,8 @@ function AppInner() {
             sessions={sessions} allStrains={allStrains}
             onEdit={setEditingSession}
             onPassport={viewPassport}
-            onDelete={deleteSession} />
+            onDelete={deleteSession}
+            onUndoDelete={undoDeleteSession} />
         );
       case "passport":
         return (
@@ -357,6 +461,11 @@ function AppInner() {
             strainNames={strainNames}
             onPassportStrain={viewPassport}
             onLogStrain={(name)=>{ Sound.play("select"); setForm(f=>({...f,strain:name})); setStep(1); setTab("log"); }} />
+        );
+      case "community":
+        return (
+          <CommunityScreen
+            onViewStrain={viewPassport} />
         );
       case "more":
         return (
@@ -378,13 +487,15 @@ function AppInner() {
             onStartBreak={startBreak}
             onEndBreak={endBreak}
             premium={premium}
-            onUnlockClick={()=>setShowUnlock(true)} />
+            onUnlockClick={()=>setShowUnlock(true)}
+            onFeedbackClick={()=>setShowFeedback(true)}
+            onShareStats={openShareStats} />
         );
       default:
         return null;
     }
   }
-  // ── Unlock overlay ──
+  // ── Overlays ──
   if (showUnlock) {
     return (
       <>
@@ -395,4 +506,27 @@ function AppInner() {
       </>
     );
   }
+  if (showFeedback) {
+    return (
+      <>
+        <div>{renderScreen()}</div>
+        <FeedbackModal
+          onClose={()=>setShowFeedback(false)}
+          sessions={sessions}
+          profile={profile} />
+      </>
+    );
+  }
+  if (showSocialReview && socialReviewData) {
+    return (
+      <>
+        <div>{renderScreen()}</div>
+        <SocialReviewModal
+          strain={socialReviewData.strain}
+          reviewData={socialReviewData}
+          onClose={()=>setShowSocialReview(false)} />
+      </>
+    );
+  }
 }
+

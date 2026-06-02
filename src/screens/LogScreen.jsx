@@ -489,6 +489,43 @@ export default function LogScreen({ sessions, custom, setCustom, allStrains, pro
               style={{ width:"100%", marginTop:12, padding:"10px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:12, resize:"none", boxSizing:"border-box" }}/>
           </Card>
 
+          <Card style={{ background:`linear-gradient(135deg,${C.card},#1a0a0a)`, border:`1px solid ${C.border}`, marginBottom:10 }}>
+            <div style={{ fontSize:13, fontWeight:600, color:"#6ee7b7", marginBottom:12, marginTop:8 }}>🏥 Prescription</div>
+            <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>
+              Is this a prescribed medical cannabis product?
+            </div>
+            <div style={{ display:"flex", gap:8, marginBottom:form.prescription ? 14 : 0 }}>
+              <button onClick={()=>setForm(f=>({...f,prescription:!f.prescription}))}
+                style={{ padding:"8px 18px", borderRadius:20, fontSize:13, cursor:"pointer",
+                  border:`1.5px solid ${form.prescription ? "#6ee7b7" : C.border}`,
+                  background:form.prescription?"#0a2a1a":C.card,
+                  color:form.prescription?"#6ee7b7":C.muted }}>
+                {form.prescription ? "✓ Prescribed" : "Prescribed"}
+              </button>
+              {!form.prescription && (
+                <span style={{ fontSize:11, color:C.faint, alignSelf:"center" }}>Tap to add script details</span>
+              )}
+            </div>
+            {form.prescription && (
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <input value={form.clinic||""} onChange={e=>setForm(f=>({...f,clinic:e.target.value}))}
+                  placeholder="Clinic/provider (e.g. Alternaleaf, Polln, Candor)"
+                  style={{ padding:"10px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:12, boxSizing:"border-box" }}/>
+                <input value={form.scriptName||""} onChange={e=>setForm(f=>({...f,scriptName:e.target.value}))}
+                  placeholder="Product name on script (e.g. Topaz T25, ANTG Rocky)"
+                  style={{ padding:"10px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:12, boxSizing:"border-box" }}/>
+                <div style={{ display:"flex", gap:8 }}>
+                  <input value={form.dispensed||""} onChange={e=>setForm(f=>({...f,dispensed:e.target.value}))}
+                    placeholder="Amount dispensed (e.g. 10g)"
+                    style={{ flex:1, padding:"10px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:12, boxSizing:"border-box" }}/>
+                  <input value={form.cost||""} onChange={e=>setForm(f=>({...f,cost:e.target.value}))}
+                    placeholder="$AUD"
+                    style={{ width:80, padding:"10px", background:"#140800", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:12, boxSizing:"border-box" }}/>
+                </div>
+              </div>
+            )}
+          </Card>
+
           <Card style={{ background:`linear-gradient(135deg,${C.card},#1a0a0a)`, border:`1px solid ${C.border}` }}>
             <div style={{ fontSize:13, fontWeight:600, color:"#f87171", marginBottom:12, marginTop:8 }}>💊 Medical</div>
             <div style={{ fontSize:11, color:C.muted, marginBottom:12 }}>

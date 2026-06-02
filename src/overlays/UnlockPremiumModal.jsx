@@ -53,16 +53,31 @@ export default function UnlockPremiumModal({ onClose, onUnlocked }) {
         </div>
 
         <div style={{ background: "#0f0a04", borderRadius: 16, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 8 }}>You get:</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 10 }}>✨ Resin Premium</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: C.accent, marginBottom: 2 }}>$5.99<span style={{ fontSize: 13, fontWeight: 400, color: C.muted }}> AUD/month</span></div>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 14 }}>or $49 AUD/year (30% off)</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>Everything in free, plus:</div>
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            <li style={{ fontSize: 12, color: C.muted, padding: "6px 0", borderBottom: "1px solid #1a1a0a" }}>🧠 AI Strain Review Generator</li>
-            <li style={{ fontSize: 12, color: C.muted, padding: "6px 0", borderBottom: "1px solid #1a1a0a" }}>📊 Advanced Analytics</li>
-            <li style={{ fontSize: 12, color: C.muted, padding: "6px 0" }}>🚀 Priority future features</li>
+            <li style={{ fontSize: 12, color: C.muted, padding: "6px 0", borderBottom: `1px solid ${C.border}` }}>🧠 Unlimited AI personal reviews per strain</li>
+            <li style={{ fontSize: 12, color: C.muted, padding: "6px 0", borderBottom: `1px solid ${C.border}` }}>☁️ Cloud sync — your data on all devices</li>
+            <li style={{ fontSize: 12, color: C.muted, padding: "6px 0", borderBottom: `1px solid ${C.border}` }}>📊 Tolerance curve & effect correlations</li>
+            <li style={{ fontSize: 12, color: C.muted, padding: "6px 0", borderBottom: `1px solid ${C.border}` }}>📤 Full data export (JSON, CSV)</li>
+            <li style={{ fontSize: 12, color: C.muted, padding: "6px 0" }}>🔮 Early access to new features</li>
           </ul>
         </div>
 
-        <div style={{ fontSize: 12, color: C.muted, marginBottom: 12, lineHeight: 1.4 }}>
-          Purchase at <span style={{ color: C.accent }}>gardenstateau.gumroad.com/l/resin-premium</span> — you'll receive a license key by email. Paste it below.
+        <a href="https://gardenstateau.gumroad.com/l/resin-premium" target="_blank" rel="noopener noreferrer"
+          style={{ display: "block", width: "100%", padding: "12px", borderRadius: 12, border: `2px solid ${C.accent}`,
+            background: "transparent", color: C.accent, fontSize: 14, fontWeight: 700, cursor: "pointer",
+            textAlign: "center", textDecoration: "none", marginBottom: 20, boxSizing: "border-box" }}>
+          🛒 Buy Resin Premium — $5.99 AUD/mo
+        </a>
+
+        <div style={{ textAlign: "center", marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>Already purchased?</div>
+          <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.4 }}>
+            Check your email from Gumroad for a license key
+          </div>
         </div>
 
         <input

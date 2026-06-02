@@ -29,6 +29,15 @@ const Icons = {
       <path d="M6 16c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5" />
     </svg>
   ),
+  community: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 16c0-1.5-1-3-3-3s-3 1.5-3 3" />
+      <circle cx="6" cy="7" r="2" />
+      <circle cx="14" cy="7" r="2" />
+      <path d="M18 16c0-1-1-2-2-2s-2 1-2 2" />
+      <path d="M8 5c0-1 1-2 2-2s2 1 2 2" />
+    </svg>
+  ),
   more: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="10" cy="10" r="2" />
@@ -43,6 +52,7 @@ const TABS = [
   { id: "log", icon: Icons.log, l: "Log" },
   { id: "sessions", icon: Icons.sessions, l: "History" },
   { id: "passport", icon: Icons.passport, l: "Passport" },
+  { id: "community", icon: Icons.community, l: "Community" },
   { id: "more", icon: Icons.more, l: "More" },
 ];
 

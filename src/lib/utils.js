@@ -44,6 +44,8 @@ export const mkForm = () => ({
   physicalNotes:"", mentalNotes:"", notes:"",
   brand:"", source:"", date: new Date().toISOString().slice(0,16),
   intensity:5, photos:[], sessionTiming:"after", medical:[],
+  // Medical cannabis prescription fields
+  prescription: false, clinic: "", scriptName: "", dispensed: "", cost: "",
 });
 
 export const calcStreak = (sess) => {

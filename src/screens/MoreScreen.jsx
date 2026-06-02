@@ -213,9 +213,9 @@ function StashForm({ initial, onSave, onCancel, existingStrains }) {
 
 // ── Main MoreScreen ────────────────────────────────────────────────────────
 export default function MoreScreen({ xp, rank, profile, unlockedMilestones, earnedMilestones,
-  onExportJSON, onExportCSV, onImportJSON, onRedoQuiz, premium, onUnlockClick,
+  onExportJSON, onExportCSV, onImportJSON, onRedoQuiz, premium, onUnlockClick, onFeedbackClick,
   stash, onAddStash, onEditStash, onDeleteStash,
-  sessions, breakActive, breakStart, onStartBreak, onEndBreak }) {
+  sessions, breakActive, breakStart, onStartBreak, onEndBreak, onShareStats }) {
 
   const [showStash, setShowStash] = useState(false);
   const [showStashForm, setShowStashForm] = useState(false);
@@ -367,8 +367,8 @@ export default function MoreScreen({ xp, rank, profile, unlockedMilestones, earn
 
       {/* ── Export ── */}
       <Card style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 4 }}>📤 Export & Backup</div>
-        <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>Keep your data safe or move to a new phone.</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 4 }}>📤 Export & Share</div>
+        <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>Backup your data or share your stats as an image.</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <button onClick={onExportJSON} style={{ padding: "12px 16px", borderRadius: 12, border: `1px solid ${C.accent}44`,
             background: C.accentDim, color: C.accent, cursor: "pointer", fontSize: 13, fontWeight: 600, textAlign: "left" }}>
@@ -383,6 +383,11 @@ export default function MoreScreen({ xp, rank, profile, unlockedMilestones, earn
             📥 Restore from backup
             <input type="file" accept=".json" onChange={onImportJSON} style={{ display: "none" }} />
           </label>
+          <button onClick={() => onShareStats?.(xp, rank, sessions?.length, sessions)}
+            style={{ padding: "12px 16px", borderRadius: 12, border: `1px solid #a78bfa44`,
+              background: "#a78bfa11", color: "#c4b5fd", cursor: "pointer", fontSize: 13, textAlign: "left" }}>
+            🎨 Share Your Stats Card
+          </button>
         </div>
       </Card>
 
@@ -414,6 +419,12 @@ export default function MoreScreen({ xp, rank, profile, unlockedMilestones, earn
         <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>
           Your data stays on your device. Nothing sent to any server. Export regularly to keep it safe.
         </div>
+        <button onClick={onFeedbackClick} style={{
+          width: "100%", marginTop: 12, padding: "10px", borderRadius: 10, border: `1px solid ${C.border}`,
+          background: "transparent", color: C.muted, cursor: "pointer", fontSize: 12, fontWeight: 600
+        }}>
+          💬 Send Feedback
+        </button>
       </Card>
 
       {/* ── Stash form modal ── */}

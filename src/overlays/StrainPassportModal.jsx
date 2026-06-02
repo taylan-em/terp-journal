@@ -64,13 +64,27 @@ const PassportCard = ({ strain, sessions, allStrains }) => {
   );
 };
 
-const StrainPassportModal = ({ strain, sessions, allStrains, strainAnecdotes, loadingAnecdotes, anecdoteError, onLoadAnecdotes, onClose, premium, myReviews={}, generatingReview=null, onGenerateReview }) => {
+const StrainPassportModal = ({ strain, sessions, allStrains, strainAnecdotes, loadingAnecdotes, anecdoteError, onLoadAnecdotes, onClose, premium, myReviews={}, generatingReview=null, onGenerateReview, onShareReview, onOpenCamera, onOpenGallery }) => {
   const passportStrain = strain;
   return (
     <div style={{ position:"fixed", inset:0, zIndex:150, background:"rgba(8,15,9,0.96)", overflowY:"auto", padding:20 }}>
       <div style={{ maxWidth:480, margin:"0 auto" }}>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16 }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.accent }}>🛂 Strain Passport</div>
+          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+            <div style={{ fontSize:16, fontWeight:700, color:C.accent }}>🛂 Strain Passport</div>
+            {sessions.filter(s=>s.strain===strain).length >= 1 && (
+              <>
+                <button onClick={()=>onOpenCamera?.(strain)}
+                  style={{ padding:"4px 10px", borderRadius:20, border:`1px solid ${C.accent}44`, background:C.accentDim, color:C.accent, cursor:"pointer", fontSize:11, fontWeight:600 }}>
+                  📸 Photos
+                </button>
+                <button onClick={()=>onShareReview?.(strain)}
+                  style={{ padding:"4px 10px", borderRadius:20, border:`1px solid ${C.accent}44`, background:C.accentDim, color:C.accent, cursor:"pointer", fontSize:11, fontWeight:600 }}>
+                  📤 Share
+                </button>
+              </>
+            )}
+          </div>
           <button onClick={onClose} style={{ background:"transparent", border:"none", color:C.muted, fontSize:22, cursor:"pointer" }}>✕</button>
         </div>
         <PassportCard strain={passportStrain} sessions={sessions} allStrains={allStrains}/>
