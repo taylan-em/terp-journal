@@ -2,7 +2,7 @@
 // Calls Gumroad API to validate a license key
 // No auth needed on the client side — Gumroad's license endpoint is public
 
-const GUMROAD_PRODUCT_ID = "R9DZxk6JJBsxpdnerpwelQ==";
+const GUMROAD_PRODUCT_ID = "zj9HhcxFOtmjX8oxctdMJA==";
 const GUMROAD_LICENSE_URL = "https://api.gumroad.com/v2/licenses/verify";
 
 export function verifyLicense(key) {
