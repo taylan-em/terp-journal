@@ -1,5 +1,7 @@
 {
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/((?!api).*)", "destination": "/index.html" }
+  ],
   "functions": {
     "api/claude.js": {
       "memory": 256,
