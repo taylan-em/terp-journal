@@ -5,6 +5,7 @@ import Card from "../components/Card";
 import XPBar from "../components/XPBar";
 import LogoMark from "../components/LogoMark";
 import Sound from "../lib/sound";
+import { getSession, resendVerification, isSupabaseConfigured } from "../lib/supabase";
 
 // ── Quantity formatting ────────────────────────────────────────────────────
 const fmtAmount = (v) => (v % 1 === 0 ? v.toString() : v.toFixed(1));
@@ -221,12 +222,36 @@ export default function MoreScreen({ xp, rank, profile, unlockedMilestones, earn
   const [showStashForm, setShowStashForm] = useState(false);
   const [editingStashItem, setEditingStashItem] = useState(null);
   const [strainList, setStrainList] = useState([]);
+  const [userEmail, setUserEmail] = useState(null);
+  const [resendMsg, setResendMsg] = useState("");
+  const [resending, setResending] = useState(false);
 
   // Collect unique strain names
   useEffect(() => {
     const names = [...new Set(stash.map(i => i.strain).filter(Boolean))];
     setStrainList(names);
   }, [stash]);
+
+  // Load user email from supabase session
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    getSession().then(({ data }) => {
+      if (data?.session?.user?.email) setUserEmail(data.session.user.email);
+    }).catch(() => {});
+  }, []);
+
+  const handleResendFromMore = async () => {
+    if (!userEmail) return;
+    setResending(true);
+    setResendMsg("");
+    const { error } = await resendVerification(userEmail);
+    if (error) {
+      setResendMsg(error.message || "Failed to resend.");
+    } else {
+      setResendMsg("Verification email sent! Check your inbox.");
+    }
+    setResending(false);
+  };
 
   const totalStashG = stash.reduce((sum, i) => sum + (i.unit === "g" ? i.amount : 0), 0);
   const totalStashValue = stash.reduce((sum, i) => sum + (i.price || 0), 0);
@@ -309,6 +334,23 @@ export default function MoreScreen({ xp, rank, profile, unlockedMilestones, earn
             </>
           )}
         </div>
+      )}
+
+      {/* ── Account section ── */}
+      {userEmail && (
+        <Card style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 8 }}>🔐 Account</div>
+          <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{userEmail}</div>
+          <button onClick={handleResendFromMore} disabled={resending}
+            style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${C.border}`,
+              background: "transparent", color: C.muted, cursor: resending ? "default" : "pointer",
+              fontSize: 11, opacity: resending ? 0.5 : 1 }}>
+            {resending ? "Sending..." : "Resend verification email"}
+          </button>
+          {resendMsg && (
+            <div style={{ fontSize: 11, color: resendMsg.includes("sent") ? "#6ee7b7" : "#f87171", marginTop: 8 }}>{resendMsg}</div>
+          )}
+        </Card>
       )}
 
       {/* ── T-Break tracker ── */}
