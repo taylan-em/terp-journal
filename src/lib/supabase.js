@@ -24,7 +24,13 @@ export function isSupabaseConfigured() {
 
 export async function signUp(email, password) {
   const sb = await getSupabase();
-  return sb.auth.signUp({ email, password });
+  return sb.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: window.location.origin + "/auth/callback"
+    }
+  });
 }
 
 export async function signIn(email, password) {

@@ -5,12 +5,12 @@ let _sb = null;
 async function getSB() {
   if (_sb) return _sb;
   const { getSupabase } = await import("./supabase");
-  _sb = await getSB();
+  _sb = await getSupabase();
   return _sb;
 }
 async function checkSBConfig() {
   const { isSupabaseConfigured } = await import("./supabase");
-  return checkSBConfig();
+  return isSupabaseConfigured();
 }
 
 // ── Sample community reviews ────────────────────────────────────────────

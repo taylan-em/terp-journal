@@ -5,7 +5,15 @@
 const GUMROAD_PRODUCT_ID = "zj9HhcxFOtmjX8oxctdMJA==";
 const GUMROAD_LICENSE_URL = "https://api.gumroad.com/v2/licenses/verify";
 
+// Dev/test key — bypasses Gumroad for testing the full unlock flow
+const DEV_KEY = "RESIN-DEV-UNLOCK-TEST";
+
 export function verifyLicense(key) {
+  // Dev key: instant unlock, no network call
+  if (key.trim() === DEV_KEY) {
+    return Promise.resolve({ valid: true, purchase: { email: "dev@localhost" } });
+  }
+
   return fetch(GUMROAD_LICENSE_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

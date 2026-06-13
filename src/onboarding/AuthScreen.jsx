@@ -28,15 +28,26 @@ export default function AuthScreen({ onAuthenticated, onSkip }) {
       const { data, error: authError } = await fn(email, password);
 
       if (authError) {
-        setError(authError.message);
+        const msg = authError.message || "";
+        if (msg.includes("already registered") || msg.includes("already exists") || msg.includes("User already")) {
+          setError("This email is already registered. Sign in instead.");
+        } else {
+          setError(msg);
+        }
         setLoading(false);
         return;
       }
 
-      if (mode === "signup" && data?.user?.identities?.length === 0) {
-        setMessage("Check your email for a confirmation link.");
-        setLoading(false);
-        return;
+      // New signup — identities populated means fresh account
+      // identities empty = email already taken (Supabase returns user obj anyway)
+      if (mode === "signup") {
+        if (!data?.user?.identities || data.user.identities.length === 0) {
+          setError("This email is already registered. Sign in instead.");
+          setLoading(false);
+          return;
+        }
+        // Email confirmation is disabled on Supabase side — proceed immediately
+        // (Re-enable this check if email confirmation is turned on in Supabase dashboard)
       }
 
       onAuthenticated(data?.user);

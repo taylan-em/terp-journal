@@ -1,6 +1,13 @@
 import { RANKS } from '../constants/ranks';
 import { EFFECTS, METHODS, PHYSICAL_FACTORS, MENTAL_FACTORS } from '../constants/enums';
 
+// Format a Date as local datetime string YYYY-MM-DDTHH:MM (matches phone timezone)
+export const formatLocalDatetime = (d) => {
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+};
+
 export const getXP = (sessions) => {
   let xp = 0;
   sessions.forEach(s => {
@@ -42,7 +49,7 @@ export const mkForm = () => ({
   physical: Object.fromEntries(PHYSICAL_FACTORS.map(f=>[f.id,0])),
   mental:   Object.fromEntries(MENTAL_FACTORS.map(f=>[f.id,0])),
   physicalNotes:"", mentalNotes:"", notes:"",
-  brand:"", source:"", date: new Date().toISOString().slice(0,16),
+  brand:"", source:"", date: formatLocalDatetime(new Date()),
   intensity:5, photos:[], sessionTiming:"after", medical:[],
   // Medical cannabis prescription fields
   prescription: false, clinic: "", scriptName: "", dispensed: "", cost: "",

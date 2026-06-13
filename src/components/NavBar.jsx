@@ -31,11 +31,11 @@ const Icons = {
   ),
   community: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 16c0-1.5-1-3-3-3s-3 1.5-3 3" />
-      <circle cx="6" cy="7" r="2" />
-      <circle cx="14" cy="7" r="2" />
-      <path d="M18 16c0-1-1-2-2-2s-2 1-2 2" />
-      <path d="M8 5c0-1 1-2 2-2s2 1 2 2" />
+      <circle cx="10" cy="10" r="7" />
+      <circle cx="7" cy="8" r="1.5" />
+      <circle cx="13" cy="8" r="1.5" />
+      <circle cx="10" cy="13" r="1.5" />
+      <path d="M7 8l3 5 3-5" />
     </svg>
   ),
   more: (
