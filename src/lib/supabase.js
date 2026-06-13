@@ -33,6 +33,17 @@ export async function signUp(email, password) {
   });
 }
 
+export async function resendVerification(email) {
+  const sb = await getSupabase();
+  return sb.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: window.location.origin + "/auth/callback"
+    }
+  });
+}
+
 export async function signIn(email, password) {
   const sb = await getSupabase();
   return sb.auth.signInWithPassword({ email, password });

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C } from "../constants/colors";
-import { signUp, signIn, signInWithGoogle, signOut, isSupabaseConfigured } from "../lib/supabase";
+import { signUp, signIn, signInWithGoogle, signOut, isSupabaseConfigured, resendVerification } from "../lib/supabase";
 import LogoMark from "../components/LogoMark";
 
 export default function AuthScreen({ onAuthenticated, onSkip }) {
@@ -51,6 +51,22 @@ export default function AuthScreen({ onAuthenticated, onSkip }) {
       }
 
       onAuthenticated(data?.user);
+    } catch (e) {
+      setError("Something went wrong. Try again.");
+    }
+    setLoading(false);
+  };
+
+  const handleResend = async () => {
+    if (!email) { setError("Enter your email first."); return; }
+    setError(""); setMessage(""); setLoading(true);
+    try {
+      const { error: resendError } = await resendVerification(email);
+      if (resendError) {
+        setError(resendError.message || "Could not resend. Try again.");
+      } else {
+        setMessage("Verification email resent! Check your inbox.");
+      }
     } catch (e) {
       setError("Something went wrong. Try again.");
     }
@@ -123,9 +139,17 @@ export default function AuthScreen({ onAuthenticated, onSkip }) {
           <button type="submit" disabled={loading}
             style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", cursor: loading ? "default" : "pointer",
               background: loading ? C.faint : `linear-gradient(135deg,#c2410c,${C.accent})`,
-              color: loading ? C.muted : "#080502", fontSize: 15, fontWeight: 700, marginBottom: 12, opacity: loading ? 0.6 : 1 }}>
+              color: loading ? C.muted : "#080502", fontSize: 15, fontWeight: 700, marginBottom: 8, opacity: loading ? 0.6 : 1 }}>
             {loading ? "Loading..." : mode === "signup" ? "Create account" : "Sign in"}
           </button>
+          {mode === "signup" && (
+            <button type="button" onClick={handleResend} disabled={loading}
+              style={{ width: "100%", padding: "10px", borderRadius: 12, border: `1px solid ${C.border}`,
+                background: "transparent", color: C.muted, cursor: loading ? "default" : "pointer",
+                fontSize: 12, marginBottom: 12, opacity: loading ? 0.5 : 1 }}>
+              Resend verification email
+            </button>
+          )}
         </form>
 
         {/* Divider */}
